@@ -205,56 +205,56 @@ public class Movement : MonoBehaviour
         }
     }
 
-/// <summary>
-/// Processes and plays sound effects based on state changes
-/// </summary>
-private void ProcessSoundEffects()
-{
-    float currentTime = Time.time;
-    
-    // Steering change sound
-    if (currentSteeringType != steeringTypeCache)
+    /// <summary>
+    /// Processes and plays sound effects based on state changes
+    /// </summary>
+    private void ProcessSoundEffects()
     {
-        PlaySound(steeringChangeSound);
-        steeringTypeCache = currentSteeringType;
-    }
+        float currentTime = Time.time;
 
-    // Determina estados atuais
-    bool slidingNow = collisionSystem.IsWallSliding;
-    bool inCollisionNow = (collisionSystem.IsInCollision ||
-                           collisionSystem.IsFrontBlocked ||
-                           collisionSystem.IsBackBlocked);
+        // Steering change sound
+        if (currentSteeringType != steeringTypeCache)
+        {
+            PlaySound(steeringChangeSound);
+            steeringTypeCache = currentSteeringType;
+        }
 
-    // PRIORIDADE: Se está a deslizar, NÃO toca som de colisão
-    if (slidingNow)
-    {
-        // Toca som de deslizamento se começou agora E respeitando cooldown
-        if (!slidingCache && currentTime - lastSlideSoundTime > soundCooldown)
+        // Determina estados atuais
+        bool slidingNow = collisionSystem.IsWallSliding;
+        bool inCollisionNow = (collisionSystem.IsInCollision ||
+                               collisionSystem.IsFrontBlocked ||
+                               collisionSystem.IsBackBlocked);
+
+        // PRIORIDADE: Se está a deslizar, NÃO toca som de colisão
+        if (slidingNow)
         {
-            PlaySound(slideStartSound);
-            lastSlideSoundTime = currentTime;
+            // Toca som de deslizamento se começou agora E respeitando cooldown
+            if (!slidingCache && currentTime - lastSlideSoundTime > soundCooldown)
+            {
+                PlaySound(slideStartSound);
+                lastSlideSoundTime = currentTime;
+            }
+
+            // Marca colisão como falsa para não tocar som de colisão
+            inCollisionCache = inCollisionNow; // Atualiza cache sem tocar som
         }
-        
-        // Marca colisão como falsa para não tocar som de colisão
-        inCollisionCache = inCollisionNow; // Atualiza cache sem tocar som
-    }
-    else if (inCollisionNow)
-    {
-        // Só toca som de colisão se NÃO está a deslizar
-        if (!inCollisionCache && currentTime - lastCollisionSoundTime > soundCooldown)
+        else if (inCollisionNow)
         {
-            PlaySound(hardCollisionSound);
-            lastCollisionSoundTime = currentTime;
+            // Só toca som de colisão se NÃO está a deslizar
+            if (!inCollisionCache && currentTime - lastCollisionSoundTime > soundCooldown)
+            {
+                PlaySound(hardCollisionSound);
+                lastCollisionSoundTime = currentTime;
+            }
+        }
+
+        // Atualiza caches
+        slidingCache = slidingNow;
+        if (!slidingNow) // Só atualiza cache de colisão se não está a deslizar
+        {
+            inCollisionCache = inCollisionNow;
         }
     }
-    
-    // Atualiza caches
-    slidingCache = slidingNow;
-    if (!slidingNow) // Só atualiza cache de colisão se não está a deslizar
-    {
-        inCollisionCache = inCollisionNow;
-    }
-}
 
     /// <summary>
     /// Updates warning and feedback timers

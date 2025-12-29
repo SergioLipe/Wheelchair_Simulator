@@ -85,7 +85,6 @@ public class WheelController : MonoBehaviour
     // Component references
     private Movement movementScript;
     private Rigidbody rb;
-    private Sounds wheelchairSounds;
 
     // Initial joint rotations
     private Quaternion initialRotJoint4;
@@ -131,27 +130,6 @@ public class WheelController : MonoBehaviour
         movementScript = GetComponent<Movement>();
         rb = GetComponent<Rigidbody>();
         previousPosition = transform.position;
-
-        wheelchairSounds = GetComponentInChildren<Sounds>();
-        
-        if (wheelchairSounds == null && transform.parent != null)
-        {
-            wheelchairSounds = transform.parent.GetComponentInChildren<Sounds>();
-        }
-        
-        if (wheelchairSounds == null)
-        {
-            wheelchairSounds = GetComponentInParent<Sounds>();
-        }
-        
-        if (wheelchairSounds == null)
-        {
-            #if UNITY_2023_1_OR_NEWER
-            wheelchairSounds = FindFirstObjectByType<Sounds>();
-            #else
-            wheelchairSounds = FindObjectOfType<Sounds>();
-            #endif
-        }
     }
 
     /// <summary>
@@ -188,9 +166,10 @@ public class WheelController : MonoBehaviour
             steeringType = SteeringType.FrontSteering;
         }
 
-        if (wheelchairSounds != null)
+        // Play sound using Movement script
+        if (movementScript != null)
         {
-            wheelchairSounds.PlayClick();
+            movementScript.PlaySound(movementScript.steeringChangeSound);
         }
 
         ResetSteering();
