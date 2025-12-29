@@ -205,7 +205,7 @@ public class Movement : MonoBehaviour
         }
     }
 
-    /// <summary>
+/// <summary>
 /// Processes and plays sound effects based on state changes
 /// </summary>
 private void ProcessSoundEffects()
@@ -219,38 +219,41 @@ private void ProcessSoundEffects()
         steeringTypeCache = currentSteeringType;
     }
 
-    // Slide start sound with cooldown
+    // Determina estados atuais
     bool slidingNow = collisionSystem.IsWallSliding;
-    if (slidingNow && !slidingCache)
-    {
-        if (currentTime - lastSlideSoundTime > soundCooldown)
-        {
-            PlaySound(slideStartSound);
-            lastSlideSoundTime = currentTime;
-        }
-    }
-    slidingCache = slidingNow;
-
-    // Collision sound with cooldown (sliding has priority)
     bool inCollisionNow = (collisionSystem.IsInCollision ||
                            collisionSystem.IsFrontBlocked ||
                            collisionSystem.IsBackBlocked);
 
+    // PRIORIDADE: Se está a deslizar, NÃO toca som de colisão
     if (slidingNow)
     {
-        inCollisionNow = false;
+        // Toca som de deslizamento se começou agora E respeitando cooldown
+        if (!slidingCache && currentTime - lastSlideSoundTime > soundCooldown)
+        {
+            PlaySound(slideStartSound);
+            lastSlideSoundTime = currentTime;
+        }
+        
+        // Marca colisão como falsa para não tocar som de colisão
+        inCollisionCache = inCollisionNow; // Atualiza cache sem tocar som
     }
-
-    if (inCollisionNow && !inCollisionCache)
+    else if (inCollisionNow)
     {
-        if (currentTime - lastCollisionSoundTime > soundCooldown)
+        // Só toca som de colisão se NÃO está a deslizar
+        if (!inCollisionCache && currentTime - lastCollisionSoundTime > soundCooldown)
         {
             PlaySound(hardCollisionSound);
             lastCollisionSoundTime = currentTime;
         }
     }
-
-    inCollisionCache = inCollisionNow;
+    
+    // Atualiza caches
+    slidingCache = slidingNow;
+    if (!slidingNow) // Só atualiza cache de colisão se não está a deslizar
+    {
+        inCollisionCache = inCollisionNow;
+    }
 }
 
     /// <summary>

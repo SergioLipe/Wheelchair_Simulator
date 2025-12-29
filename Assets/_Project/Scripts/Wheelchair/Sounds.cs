@@ -1,9 +1,8 @@
 using UnityEngine;
 
 /// <summary>
-/// Ultra-simplified sound system for electric wheelchair
+// Sound system for electric wheelchair
 /// Only startup and loop based on user input
-/// PLACE THIS SCRIPT ON THE "Wheelchair" GameObject
 /// </summary>
 public class Sounds : MonoBehaviour
 {
