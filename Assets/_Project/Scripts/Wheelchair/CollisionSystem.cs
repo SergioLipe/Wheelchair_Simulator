@@ -16,13 +16,13 @@ public class CollisionSystem : MonoBehaviour
     [Header("=== Detection Settings ===")]
     [Tooltip("Minimum collision point height to be considered (ignores ground)")]
     [SerializeField] private float minCollisionHeight = 0.2f;
-    
+
     [Tooltip("Maximum angle with vertical to ignore (90° = perfect horizontal)")]
     [SerializeField] private float maxGroundAngle = 45f;
-    
+
     [Tooltip("Tags to ignore in collisions (optional)")]
     [SerializeField] private string[] ignoreTags = { "Ground", "Floor", "Terrain" };
-    
+
     [Tooltip("Layers to ignore in collisions (optional)")]
     [SerializeField] private LayerMask ignoreLayerMask;
 
@@ -36,7 +36,7 @@ public class CollisionSystem : MonoBehaviour
     private Vector3 collisionPoint = Vector3.zero;
     private float collisionTime = 0f;
     private float lastValidCollisionTime = 0f;
-    
+
     // Multiple collision handling
     private int collisionCount = 0;
     private float multiCollisionResetTime = 0f;
@@ -49,6 +49,10 @@ public class CollisionSystem : MonoBehaviour
     // Wall sliding system
     private Vector3 slideDirection = Vector3.zero;
     private float slideTimer = 0f;
+
+
+    // Controlls time between warnings to LevelManager to prevent spamming
+    private float lastManagerUpdate = 0f;
 
     /// <summary>
     /// Initialize collision system with necessary references
@@ -140,7 +144,7 @@ public class CollisionSystem : MonoBehaviour
         if (collisionCount > 1)
         {
             multiCollisionResetTime += Time.deltaTime;
-            
+
             // Force reset after brief period to prevent permanent stuck
             if (multiCollisionResetTime > 0.5f)
             {
@@ -170,24 +174,24 @@ public class CollisionSystem : MonoBehaviour
 
         // Prevent collision spam
         float timeSinceLastCollision = Time.time - lastValidCollisionTime;
-        if (timeSinceLastCollision < 0.05f) 
+        if (timeSinceLastCollision < 0.05f)
             return;
 
         // Determine collision direction
         Vector3 dirToObstacle = (hit.point - wheelchairTransform.position);
         dirToObstacle.y = 0;
-        
+
         // Safety check for zero vector
         if (dirToObstacle.sqrMagnitude < 0.001f)
             return;
-            
+
         dirToObstacle.Normalize();
 
         float angle = Vector3.Angle(wheelchairTransform.forward, dirToObstacle);
 
         // Process collision based on angle with priority system
         bool collisionProcessed = false;
-        
+
         if (angle < 60f && !frontBlocked) // Front collision
         {
             ProcessFrontCollision(ref currentSpeedRef);
@@ -213,7 +217,7 @@ public class CollisionSystem : MonoBehaviour
             collisionTime = Time.time;
             lastValidCollisionTime = Time.time;
             collisionCount++;
-            
+
             // Limit collision count
             collisionCount = Mathf.Min(collisionCount, 3);
         }
@@ -295,15 +299,25 @@ public class CollisionSystem : MonoBehaviour
     {
         frontBlocked = true;
         frontBlockTimer = blockingDuration;
-        
+
         // Only stop if moving forward
         if (currentSpeedRef > 0)
         {
             currentSpeedRef = 0;
         }
-        
+
         if (flashEffect != null)
             flashEffect.FrontFlash();
+
+        // Checks if its been 1 second since last warning to LevelManager to prevent spamming
+        if (Time.time > lastManagerUpdate + 1.0f)
+        {
+            if (LevelManager.Instance != null)
+            {
+                LevelManager.Instance.RegisterStrongCollision("Front Obstacle");
+                lastManagerUpdate = Time.time;
+            }
+        }
     }
 
     /// <summary>
@@ -313,15 +327,26 @@ public class CollisionSystem : MonoBehaviour
     {
         backBlocked = true;
         backBlockTimer = blockingDuration;
-        
+
         // Only stop if moving backward
         if (currentSpeedRef < 0)
         {
             currentSpeedRef = 0;
         }
-        
+
         if (flashEffect != null)
             flashEffect.BackFlash();
+
+
+        // Checks if its been 1 second since last warning to LevelManager to prevent spamming
+        if (Time.time > lastManagerUpdate + 1.0f)
+        {
+            if (LevelManager.Instance != null)
+            {
+                LevelManager.Instance.RegisterStrongCollision("Back Obstacle");
+                lastManagerUpdate = Time.time;
+            }
+        }
     }
 
     /// <summary>
@@ -330,21 +355,32 @@ public class CollisionSystem : MonoBehaviour
     private void ProcessSideCollision(ControllerColliderHit hit, Vector3 dirToObstacle)
     {
         collisionNormal = hit.normal;
-        
+
         // Calculate tangential slide direction using vector projection
         Vector3 projection = Vector3.Project(wheelchairTransform.forward, collisionNormal);
         slideDirection = (wheelchairTransform.forward - projection).normalized;
-        
+
         // Only enable sliding if moving with some speed
         if (Mathf.Abs(controller.velocity.magnitude) > 0.1f)
         {
             wallSliding = true;
             slideTimer = 0.3f; // Slide for a brief period
+
+
+            // Registers slide if 0.5d gas passed
+            if (Time.time > lastManagerUpdate + 0.5f)
+            {
+                if (LevelManager.Instance != null)
+                {
+                    LevelManager.Instance.RegisterSlide();
+    
+                }
+            }
         }
 
         // Determine if left or right side
         float side = Vector3.Dot(wheelchairTransform.right, dirToObstacle);
-        
+
         if (flashEffect != null)
         {
             if (side > 0)
@@ -361,10 +397,10 @@ public class CollisionSystem : MonoBehaviour
     {
         if (string.IsNullOrEmpty(objectName))
             return false;
-            
+
         string name = objectName.ToLower();
-        return name.Contains("plane") || 
-               name.Contains("ground") || 
+        return name.Contains("plane") ||
+               name.Contains("ground") ||
                name.Contains("floor") ||
                name.Contains("terrain") ||
                name.Contains("chao") ||
@@ -416,7 +452,7 @@ public class CollisionSystem : MonoBehaviour
     public Vector3 SlideDirection => slideDirection;
     public bool IsInCollision => inCollision;
     public string CollidedObject => collidedObject;
-    
+
     // Additional property to check if stuck
     public bool IsStuck => collisionCount > 2 || multiCollisionResetTime > 0.3f;
 }
