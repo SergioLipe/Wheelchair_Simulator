@@ -1,17 +1,19 @@
 using UnityEngine;
-using TMPro; // Required for TextMeshPro elements
-using UnityEngine.SceneManagement; // Required for reloading scenes (optional future use)
+using TMPro;                // Required for TextMeshPro elements
+using UnityEngine.SceneManagement; // Required for reloading scenes or going to Menu
 
 /// <summary>
-/// Manages the game state, timer, scoring system, and UI updates.
-/// Variable names are in English, UI output is in Portuguese.
+/// Manages the game state, timer, scoring system, saving progress, and UI updates.
 /// </summary>
 public class LevelManager : MonoBehaviour
 {
-    //Singleton instance to allow easy access from other scripts (like CollisionSystem)
+    // Singleton instance to allow easy access from other scripts (like CollisionSystem)
     public static LevelManager Instance { get; private set; }
 
     [Header("--- Level Configuration ---")]
+    [Tooltip("Unique ID for this level (1, 2, 3...). Crucial for the Save System.")]
+    public int levelID = 1; 
+
     [Tooltip("Maximum time in seconds to achieve 3 stars")]
     public float timeFor3Stars = 60f;
 
@@ -34,7 +36,7 @@ public class LevelManager : MonoBehaviour
     [Tooltip("Reference to the Collision Counter Text (TextMeshPro)")]
     public TMP_Text collisionText;
 
-    [Tooltip("Reference to the Slide Counter Text")]
+    [Tooltip("Reference to the Slide Counter Text (TextMeshPro)")]
     public TMP_Text slideText;
 
     [Tooltip("Reference to the End Game Panel (Must be disabled at start)")]
@@ -89,11 +91,10 @@ public class LevelManager : MonoBehaviour
         if (!isLevelActive) return;
 
         collisionCount++;
-       
-
+        
+        // Update UI in Portuguese
         if (collisionText != null)
         {
-            // UI in Portuguese
             collisionText.text = $"Colisões: {collisionCount}";
         }
     }
@@ -101,13 +102,13 @@ public class LevelManager : MonoBehaviour
     /// <summary>
     /// Called by CollisionSystem when the wheelchair scrapes a wall
     /// </summary>
-public void RegisterSlide()
+    public void RegisterSlide()
     {
         if (!isLevelActive) return;
 
         slideCount++;
         
-        //  Update UI
+        // Update UI in Portuguese
         if (slideText != null)
         {
             slideText.text = $"Deslizes: {slideCount}";
@@ -115,7 +116,7 @@ public void RegisterSlide()
     }
 
     /// <summary>
-    /// Called when the player reaches the goal
+    /// Called by GoalDetector when the player reaches the goal
     /// </summary>
     public void FinishLevel()
     {
@@ -124,7 +125,7 @@ public void RegisterSlide()
     }
 
     /// <summary>
-    /// Calculates stars based on performance and shows the end screen
+    /// Calculates stars based on performance, SAVES the result, and shows the end screen
     /// </summary>
     private void CalculateResults()
     {
@@ -140,9 +141,28 @@ public void RegisterSlide()
             stars = 2;
         }
 
+        // --- SAVE SYSTEM START ---
+        // Create a unique key for this level (e.g., "Level_1_Stars")
+        string saveKey = "Level_" + levelID + "_Stars";
+
+        // Get the previous best score (default is 0)
+        int currentBest = PlayerPrefs.GetInt(saveKey, 0);
+
+        // If the new score is better, save it
+        if (stars > currentBest)
+        {
+            PlayerPrefs.SetInt(saveKey, stars);
+            PlayerPrefs.Save(); // Writes to disk
+            Debug.Log($"Game Saved! Level {levelID} completed with {stars} stars.");
+        }
+        // --- SAVE SYSTEM END ---
+
         ShowEndScreen(stars);
     }
 
+    /// <summary>
+    /// Displays the victory panel and the star rating
+    /// </summary>
     private void ShowEndScreen(int starCount)
     {
         if (endGamePanel != null)
@@ -162,5 +182,15 @@ public void RegisterSlide()
                 finalStarsText.text = $"NÍVEL CONCLUÍDO!\nClassificação: {starString}";
             }
         }
+    }
+
+    /// <summary>
+    /// Helper function to load the Main Menu (to be used by UI Buttons)
+    /// </summary>
+    public void GoToMenu()
+    {
+        // Ensure time scale is normal before leaving
+        Time.timeScale = 1f; 
+        SceneManager.LoadScene("MainMenu");
     }
 }
