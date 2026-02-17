@@ -1,9 +1,10 @@
 using UnityEngine;
 using TMPro;                // Required for TextMeshPro elements
-using UnityEngine.SceneManagement; // Required for reloading scenes or going to Menu
+using UnityEngine.SceneManagement; // Required for reloading scenes or loading the Menu
 
 /// <summary>
 /// Manages the game state, timer, scoring system, saving progress, and UI updates.
+/// Handles the logic for calculating stars based on Time, Collisions, and Wall Slides.
 /// </summary>
 public class LevelManager : MonoBehaviour
 {
@@ -14,14 +15,26 @@ public class LevelManager : MonoBehaviour
     [Tooltip("Unique ID for this level (1, 2, 3...). Crucial for the Save System.")]
     public int levelID = 1; 
 
+    [Header("--- Star Criteria (Time) ---")]
     [Tooltip("Maximum time in seconds to achieve 3 stars")]
     public float timeFor3Stars = 60f;
 
     [Tooltip("Maximum time in seconds to achieve 2 stars")]
     public float timeFor2Stars = 90f;
 
+    [Header("--- Star Criteria (Collisions) ---")]
     [Tooltip("Maximum number of collisions allowed to achieve 3 stars")]
     public int maxCollisionsFor3Stars = 0;
+
+    [Tooltip("Maximum number of collisions allowed to achieve 2 stars")]
+    public int maxCollisionsFor2Stars = 2;
+
+    [Header("--- Star Criteria (Slides) ---")]
+    [Tooltip("Maximum number of slides allowed to achieve 3 stars")]
+    public int maxSlidesFor3Stars = 2;
+
+    [Tooltip("Maximum number of slides allowed to achieve 2 stars")]
+    public int maxSlidesFor2Stars = 5;
 
     [Header("--- Current State (Read Only) ---")]
     public float elapsedTime = 0f;
@@ -60,7 +73,7 @@ public class LevelManager : MonoBehaviour
 
     private void Update()
     {
-        // Only update timer if the level is active
+        // Only update the timer if the level is active
         if (isLevelActive)
         {
             elapsedTime += Time.deltaTime;
@@ -78,7 +91,7 @@ public class LevelManager : MonoBehaviour
             string minutes = Mathf.Floor(elapsedTime / 60).ToString("00");
             string seconds = (elapsedTime % 60).ToString("00");
             
-            // UI in Portuguese
+            // UI output in Portuguese
             timeText.text = $"Tempo: {minutes}:{seconds}";
         }
     }
@@ -92,7 +105,7 @@ public class LevelManager : MonoBehaviour
 
         collisionCount++;
         
-        // Update UI in Portuguese
+        // UI output in Portuguese
         if (collisionText != null)
         {
             collisionText.text = $"Colisões: {collisionCount}";
@@ -108,7 +121,7 @@ public class LevelManager : MonoBehaviour
 
         slideCount++;
         
-        // Update UI in Portuguese
+        // UI output in Portuguese
         if (slideText != null)
         {
             slideText.text = $"Deslizes: {slideCount}";
@@ -125,37 +138,45 @@ public class LevelManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Calculates stars based on performance, SAVES the result, and shows the end screen
+    /// Calculates stars based on Time, Collisions AND Slides.
+    /// Saves the result if it's a new high score.
     /// </summary>
     private void CalculateResults()
     {
-        int stars = 1; // Minimum 1 star for finishing
+        int stars = 1; // Minimum 1 star for completing the level
 
-        // Logic: To get 3 stars, must be fast AND have few collisions
-        if (elapsedTime <= timeFor3Stars && collisionCount <= maxCollisionsFor3Stars)
+        // 3 STARS CRITERIA (GOLD)
+        // Must pass ALL checks: Fast Time AND Low Collisions AND Low Slides
+        if (elapsedTime <= timeFor3Stars && 
+            collisionCount <= maxCollisionsFor3Stars && 
+            slideCount <= maxSlidesFor3Stars)
         {
             stars = 3;
         }
-        else if (elapsedTime <= timeFor2Stars)
+        // 2 STARS CRITERIA (SILVER)
+        // If failed Gold, check if it meets Silver criteria
+        else if (elapsedTime <= timeFor2Stars && 
+                 collisionCount <= maxCollisionsFor2Stars && 
+                 slideCount <= maxSlidesFor2Stars)
         {
             stars = 2;
         }
+        
+        // If neither criteria is met, the player keeps the default 1 Star (Bronze)
 
-        // --- SAVE SYSTEM START ---
-        // Create a unique key for this level (e.g., "Level_1_Stars")
+        // --- SAVE SYSTEM ---
         string saveKey = "Level_" + levelID + "_Stars";
 
         // Get the previous best score (default is 0)
         int currentBest = PlayerPrefs.GetInt(saveKey, 0);
 
-        // If the new score is better, save it
+        // If the new score is better, save it to disk
         if (stars > currentBest)
         {
             PlayerPrefs.SetInt(saveKey, stars);
-            PlayerPrefs.Save(); // Writes to disk
+            PlayerPrefs.Save();
             Debug.Log($"Game Saved! Level {levelID} completed with {stars} stars.");
         }
-        // --- SAVE SYSTEM END ---
 
         ShowEndScreen(stars);
     }
@@ -178,7 +199,7 @@ public class LevelManager : MonoBehaviour
                     starString += "★";
                 }
 
-                // UI in Portuguese
+                // UI output in Portuguese
                 finalStarsText.text = $"NÍVEL CONCLUÍDO!\nClassificação: {starString}";
             }
         }
@@ -189,7 +210,7 @@ public class LevelManager : MonoBehaviour
     /// </summary>
     public void GoToMenu()
     {
-        // Ensure time scale is normal before leaving
+        // Ensure time scale is normal before leaving the scene
         Time.timeScale = 1f; 
         SceneManager.LoadScene("MainMenu");
     }
