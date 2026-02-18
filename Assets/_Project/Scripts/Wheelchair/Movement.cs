@@ -8,6 +8,12 @@ using System.Collections.Generic;
 /// </summary>
 public class Movement : MonoBehaviour
 {
+
+    [Header("=== Interface Settings ===")]
+    [Tooltip("Show the debug controls on screen?")]
+    public bool showInterface = true;
+
+
     [Header("=== Speed Settings ===")]
     [Tooltip("Maximum speed in normal mode (km/h)")]
     public float maxSpeedNormal = 6f;
@@ -619,6 +625,10 @@ public class Movement : MonoBehaviour
 
     void OnGUI()
     {
+
+        //Show interface
+        if (!showInterface || Time.timeScale == 0) return;
+
         // Modern styling with gradient-like semi-transparent background
         GUIStyle boxStyle = new GUIStyle(GUI.skin.box);
         boxStyle.normal.background = MakeTex(2, 2, new Color(0.15f, 0.18f, 0.22f, 0.75f));

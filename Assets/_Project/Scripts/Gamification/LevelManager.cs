@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;              // Required for Image manipulation
 using TMPro;                       // Required for TextMeshPro elements
 using UnityEngine.SceneManagement; // Required for reloading scenes or loading the Menu
 
@@ -12,7 +13,7 @@ public class LevelManager : MonoBehaviour
 
     [Header("--- Level Configuration ---")]
     [Tooltip("Unique ID for this level (1, 2, 3...). Crucial for the Save System.")]
-    public int levelID = 1; 
+    public int levelID = 1;
 
     [Header("--- Star Criteria (Time) ---")]
     [Tooltip("Maximum time in seconds to achieve 3 stars")]
@@ -42,24 +43,44 @@ public class LevelManager : MonoBehaviour
     public bool isLevelActive = true;
     private bool isPaused = false;
 
-    [Header("--- UI References (Drag and Drop) ---")]
-    [Tooltip("Reference to the Timer Text")]
+    [Header("--- UI References (In-Game HUD) ---")]
+    [Tooltip("The main HUD panel containing the speedometer and timers")]
+    public GameObject gameHUDPanel;
+
+    [Tooltip("Reference to the Timer Text (In-Game)")]
     public TMP_Text timeText;
 
-    [Tooltip("Reference to the Collision Counter Text")]
+    [Tooltip("Reference to the Collision Counter Text (In-Game)")]
     public TMP_Text collisionText;
 
-    [Tooltip("Reference to the Slide Counter Text")]
+    [Tooltip("Reference to the Slide Counter Text (In-Game)")]
     public TMP_Text slideText;
+
+    [Header("--- UI References (Pause & End Game) ---")]
+    [Tooltip("Reference to the Pause Menu Panel (Must be disabled at start)")]
+    public GameObject pauseMenuPanel;
 
     [Tooltip("Reference to the End Game Panel (Must be disabled at start)")]
     public GameObject endGamePanel;
 
-    [Tooltip("Reference to the Pause Menu Panel (Must be disabled at start)")]
-    public GameObject pauseMenuPanel;
+    [Header("--- End Game Panel Elements ---")]
+    [Tooltip("Text to display final time in the report card")]
+    public TMP_Text finalTimeText;
 
-    [Tooltip("Reference to the Star Rating Text inside the End Game Panel")]
-    public TMP_Text finalStarsText;
+    [Tooltip("Text to display final collision count in the report card")]
+    public TMP_Text finalCollisionText;
+
+    [Tooltip("Text to display final slide count in the report card")]
+    public TMP_Text finalSlideText;
+
+    [Tooltip("Image for the 1st Star")]
+    public Image star1;
+
+    [Tooltip("Image for the 2nd Star")]
+    public Image star2;
+
+    [Tooltip("Image for the 3rd Star")]
+    public Image star3;
 
     private void Awake()
     {
@@ -77,6 +98,14 @@ public class LevelManager : MonoBehaviour
     private void Start()
     {
         // Ensure the game starts in a playable state
+        isLevelActive = true;
+        elapsedTime = 0f;
+
+        // Ensure correct panels are visible/hidden
+        if (gameHUDPanel != null) gameHUDPanel.SetActive(true);
+        if (endGamePanel != null) endGamePanel.SetActive(false);
+        if (pauseMenuPanel != null) pauseMenuPanel.SetActive(false);
+
         ResumeGame();
     }
 
@@ -129,7 +158,7 @@ public class LevelManager : MonoBehaviour
         isPaused = false;
         Time.timeScale = 1f; // Unfreezes the game
 
-        // Lock and hide cursor for gameplay
+        // Lock and hide cursor for gameplay (Assuming First Person / Wheelchair view)
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 
@@ -143,12 +172,19 @@ public class LevelManager : MonoBehaviour
     {
         if (timeText != null)
         {
-            string minutes = Mathf.Floor(elapsedTime / 60).ToString("00");
-            string seconds = (elapsedTime % 60).ToString("00");
-            
-            // UI output in Portuguese
-            timeText.text = $"{minutes}:{seconds}";
+            // Update the live timer
+            timeText.text = FormatTime(elapsedTime);
         }
+    }
+
+    /// <summary>
+    /// Helper to format seconds into MM:SS string
+    /// </summary>
+    private string FormatTime(float timeInSeconds)
+    {
+        string minutes = Mathf.Floor(timeInSeconds / 60).ToString("00");
+        string seconds = (timeInSeconds % 60).ToString("00");
+        return $"{minutes}:{seconds}";
     }
 
     public void RegisterStrongCollision(string objectHit)
@@ -156,9 +192,10 @@ public class LevelManager : MonoBehaviour
         if (!isLevelActive || isPaused) return;
 
         collisionCount++;
-        
+
         if (collisionText != null)
         {
+            // Update Debug UI if needed
             collisionText.text = $"Colisões: {collisionCount}";
         }
     }
@@ -168,20 +205,23 @@ public class LevelManager : MonoBehaviour
         if (!isLevelActive || isPaused) return;
 
         slideCount++;
-        
+
         if (slideText != null)
         {
+            // Update Debug UI if needed
             slideText.text = $"Deslizes: {slideCount}";
         }
     }
 
     public void FinishLevel()
     {
+        if (!isLevelActive) return;
+
         isLevelActive = false;
-        
+
         // Ensure pause menu is closed
         if (pauseMenuPanel != null) pauseMenuPanel.SetActive(false);
-        
+
         CalculateResults();
     }
 
@@ -190,15 +230,15 @@ public class LevelManager : MonoBehaviour
         int stars = 1; // Minimum 1 star
 
         // 3 STARS CRITERIA (GOLD)
-        if (elapsedTime <= timeFor3Stars && 
-            collisionCount <= maxCollisionsFor3Stars && 
+        if (elapsedTime <= timeFor3Stars &&
+            collisionCount <= maxCollisionsFor3Stars &&
             slideCount <= maxSlidesFor3Stars)
         {
             stars = 3;
         }
         // 2 STARS CRITERIA (SILVER)
-        else if (elapsedTime <= timeFor2Stars && 
-                 collisionCount <= maxCollisionsFor2Stars && 
+        else if (elapsedTime <= timeFor2Stars &&
+                 collisionCount <= maxCollisionsFor2Stars &&
                  slideCount <= maxSlidesFor2Stars)
         {
             stars = 2;
@@ -220,36 +260,63 @@ public class LevelManager : MonoBehaviour
 
     private void ShowEndScreen(int starCount)
     {
-        // Freeze game and show cursor for the menu
-        Time.timeScale = 0f;
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        // 1. Hide the Game HUD (The speedometer, instructions, etc.)
+        if (gameHUDPanel != null)
+            gameHUDPanel.SetActive(false);
 
+        // 2. Show the End Game Panel
         if (endGamePanel != null)
         {
             endGamePanel.SetActive(true);
 
-            if (finalStarsText != null)
-            {
-                string starString = "";
-                for (int i = 0; i < starCount; i++)
-                {
-                    starString += "★";
-                }
+            // 3. Update the Report Card Stats
+            if (finalTimeText != null) finalTimeText.text = FormatTime(elapsedTime);
+            if (finalCollisionText != null) finalCollisionText.text = collisionCount.ToString();
+            if (finalSlideText != null) finalSlideText.text = slideCount.ToString();
 
-                // UI output in Portuguese
-                finalStarsText.text = $"NÍVEL CONCLUÍDO!\nClassificação: {starString}";
-            }
+            // 4. Update Star Images (Turn them Gold or Dark based on score)
+            Color activeColor = Color.white;  // Or your Gold Color
+            Color inactiveColor = new Color(0.3f, 0.3f, 0.3f, 1f); // Dark Grey
+
+            if (star1 != null) star1.color = (starCount >= 1) ? activeColor : inactiveColor;
+            if (star2 != null) star2.color = (starCount >= 2) ? activeColor : inactiveColor;
+            if (star3 != null) star3.color = (starCount >= 3) ? activeColor : inactiveColor;
         }
+
+        // 5. Freeze game and show cursor
+        Time.timeScale = 0f;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        // 6. Hide interface
+        Movement wheelchairMovement = FindObjectOfType<Movement>();
+        if (wheelchairMovement != null)
+        {
+            wheelchairMovement.showInterface = false;
+        }
+
+
+    }
+
+    // =========================================================
+    // BUTTON FUNCTIONS (Connect these in the Inspector OnClick)
+    // =========================================================
+
+    /// <summary>
+    /// Reloads the current scene
+    /// </summary>
+    public void Button_RetryLevel()
+    {
+        Time.timeScale = 1f; // Always unfreeze before loading
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     /// <summary>
     /// Loads the Main Menu scene
     /// </summary>
-    public void GoToMenu()
+    public void Button_MainMenu()
     {
-        // Important: Unfreeze time before leaving
-        Time.timeScale = 1f; 
+        Time.timeScale = 1f; // Always unfreeze before loading
         SceneManager.LoadScene("MainMenu");
     }
 }
