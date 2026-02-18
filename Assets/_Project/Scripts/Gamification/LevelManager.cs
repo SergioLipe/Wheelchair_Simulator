@@ -82,6 +82,10 @@ public class LevelManager : MonoBehaviour
     [Tooltip("Image for the 3rd Star")]
     public Image star3;
 
+    [Header("--- Special Buttons ---")]
+    [Tooltip("The Next Level Button (Drag here to hide it automatically on last level)")]
+    public GameObject nextLevelButton; // <--- NEW: Reference for the Next Level Button
+
     private void Awake()
     {
         // Singleton Pattern
@@ -264,43 +268,79 @@ public class LevelManager : MonoBehaviour
         if (gameHUDPanel != null)
             gameHUDPanel.SetActive(false);
 
-        // 2. Show the End Game Panel
-        if (endGamePanel != null)
-        {
-            endGamePanel.SetActive(true);
-
-            // 3. Update the Report Card Stats
-            if (finalTimeText != null) finalTimeText.text = FormatTime(elapsedTime);
-            if (finalCollisionText != null) finalCollisionText.text = collisionCount.ToString();
-            if (finalSlideText != null) finalSlideText.text = slideCount.ToString();
-
-            // 4. Update Star Images (Turn them Gold or Dark based on score)
-            Color activeColor = Color.white;  // Or your Gold Color
-            Color inactiveColor = new Color(0.3f, 0.3f, 0.3f, 1f); // Dark Grey
-
-            if (star1 != null) star1.color = (starCount >= 1) ? activeColor : inactiveColor;
-            if (star2 != null) star2.color = (starCount >= 2) ? activeColor : inactiveColor;
-            if (star3 != null) star3.color = (starCount >= 3) ? activeColor : inactiveColor;
-        }
-
-        // 5. Freeze game and show cursor
-        Time.timeScale = 0f;
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-
-        // 6. Hide interface
+        // 2. Hide interface (from Movement script)
         Movement wheelchairMovement = FindObjectOfType<Movement>();
         if (wheelchairMovement != null)
         {
             wheelchairMovement.showInterface = false;
         }
 
+        // 3. Show the End Game Panel
+        if (endGamePanel != null)
+        {
+            endGamePanel.SetActive(true);
 
+            // Update the Report Card Stats
+            if (finalTimeText != null) finalTimeText.text = FormatTime(elapsedTime);
+            if (finalCollisionText != null) finalCollisionText.text = collisionCount.ToString();
+            if (finalSlideText != null) finalSlideText.text = slideCount.ToString();
+
+            // Update Star Images (Turn them Gold or Dark based on score)
+            Color activeColor = Color.white;  // Or your Gold Color
+            Color inactiveColor = new Color(0.3f, 0.3f, 0.3f, 1f); // Dark Grey
+
+            if (star1 != null) star1.color = (starCount >= 1) ? activeColor : inactiveColor;
+            if (star2 != null) star2.color = (starCount >= 2) ? activeColor : inactiveColor;
+            if (star3 != null) star3.color = (starCount >= 3) ? activeColor : inactiveColor;
+
+            // === NEXT LEVEL BUTTON LOGIC ===
+            if (nextLevelButton != null)
+            {
+                // Check if there is a next scene in Build Settings
+                int nextSceneIndex = SceneManager.GetActiveScene().buildIndex + 1;
+
+                if (nextSceneIndex < SceneManager.sceneCountInBuildSettings)
+                {
+                    nextLevelButton.SetActive(true); // There is a next level
+                }
+                else
+                {
+                    nextLevelButton.SetActive(false); // Last level, hide button
+                }
+            }
+        }
+
+        // 4. Freeze game and show cursor
+        Time.timeScale = 0f;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 
     // =========================================================
     // BUTTON FUNCTIONS (Connect these in the Inspector OnClick)
     // =========================================================
+
+    /// <summary>
+    /// Loads the Next Level if available
+    /// </summary>
+    public void Button_NextLevel()
+    {
+        Time.timeScale = 1f; // Always unfreeze before loading
+
+        int nextSceneIndex = SceneManager.GetActiveScene().buildIndex + 1;
+
+        // Safety check to ensure scene exists
+        if (nextSceneIndex < SceneManager.sceneCountInBuildSettings)
+        {
+            SceneManager.LoadScene(nextSceneIndex);
+        }
+        else
+        {
+            // Fallback to menu if no next level
+            Debug.Log("No more levels! Loading Main Menu.");
+            SceneManager.LoadScene("MainMenu");
+        }
+    }
 
     /// <summary>
     /// Reloads the current scene
