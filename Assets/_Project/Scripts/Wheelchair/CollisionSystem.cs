@@ -53,6 +53,7 @@ public class CollisionSystem : MonoBehaviour
 
     // Controlls time between warnings to LevelManager to prevent spamming
     private float lastManagerUpdate = 0f;
+    private float lastSlideTime = 0f;
 
     /// <summary>
     /// Initialize collision system with necessary references
@@ -349,7 +350,8 @@ public class CollisionSystem : MonoBehaviour
         }
     }
 
-    /// <summary>
+
+/// <summary>
     /// Processes side collision and calculates slide direction
     /// </summary>
     private void ProcessSideCollision(ControllerColliderHit hit, Vector3 dirToObstacle)
@@ -366,19 +368,22 @@ public class CollisionSystem : MonoBehaviour
             wallSliding = true;
             slideTimer = 0.3f; // Slide for a brief period
 
-
-            // Registers slide if 0.5d gas passed
-            if (Time.time > lastManagerUpdate + 0.5f)
+            // === CORRECTED LOGIC ===
+            // Uses a specific timer for slides (same logic as collisions).
+            // Checks if 1 second has passed since the last registered slide.
+            if (Time.time > lastSlideTime + 1.0f)
             {
                 if (LevelManager.Instance != null)
                 {
                     LevelManager.Instance.RegisterSlide();
-    
+                    
+                    // Update the specific slide timer
+                    lastSlideTime = Time.time; 
                 }
             }
         }
 
-        // Determine if left or right side
+        // Determine if left or right side for visual effects
         float side = Vector3.Dot(wheelchairTransform.right, dirToObstacle);
 
         if (flashEffect != null)
