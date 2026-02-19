@@ -19,7 +19,7 @@ MonoBehaviour:
     width: 2048
     height: 1108.8
   m_ShowMode: 4
-  m_Title: Game
+  m_Title: Hierarchy
   m_RootView: {fileID: 2}
   m_MinSize: {x: 875, y: 300}
   m_MaxSize: {x: 10000, y: 10000}
@@ -689,9 +689,9 @@ MonoBehaviour:
   m_AudioPlay: 0
   m_DebugDrawModesUseInteractiveLightBakingData: 0
   m_Position:
-    m_Target: {x: 477.91034, y: 559.5498, z: -60.683537}
+    m_Target: {x: -17.589441, y: 0.21405675, z: 20.550196}
     speed: 2
-    m_Value: {x: 477.91034, y: 559.5498, z: -60.683537}
+    m_Value: {x: -17.589441, y: 0.21405675, z: 20.550196}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -737,13 +737,13 @@ MonoBehaviour:
     m_GridAxis: 1
     m_gridOpacity: 0.5
   m_Rotation:
-    m_Target: {x: -0.35456058, y: 0.079381615, z: -0.033115875, w: -0.9341588}
+    m_Target: {x: -0.0750208, y: 0.037701428, z: -0.0045514503, w: -0.9993898}
     speed: 2
-    m_Value: {x: -0.35456058, y: 0.079381615, z: -0.033115875, w: -0.93415886}
+    m_Value: {x: -0.0750208, y: 0.037701424, z: -0.0045514503, w: -0.9993898}
   m_Size:
-    m_Target: 197.54231
+    m_Target: 1.5270946
     speed: 2
-    m_Value: 197.54231
+    m_Value: 1.5270946
   m_Ortho:
     m_Target: 0
     speed: 2
@@ -818,7 +818,7 @@ MonoBehaviour:
       scrollPos: {x: 0, y: 0}
       m_SelectedIDs: 
       m_LastClickedID: 0
-      m_ExpandedIDs: 5ed9f8ffeedaf8ff28dff8ff6c7afaffeaa8faffe6c5faffaca4fcff98d2fcffa823fdff1630fdff48d3fdffa8fffdff7e04feff0c5cfeffdaebfeff3aa7ffff9ea7ffff24b2ffff3ab8ffff4ac5ffff3ec6ffff0ec7ffffe6c7ffff14fbffffe0270100a0360100aa360100c65d0100d05d0100d85d0100
+      m_ExpandedIDs: 74bfdfffbec2dfff24c9e6ffd219f3ff9e2dfaff1c2efaff2c3efaff463efaff1a3ffaff5048faffb249fafff283faff362dfeff14fbffff24c3000036c30000
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -991,7 +991,7 @@ MonoBehaviour:
     m_SkipHidden: 0
     m_SearchArea: 1
     m_Folders:
-    - Assets/_Project/Scripts/Gamification
+    - Assets
     m_Globs: []
     m_ProductIds: 
     m_AnyWithAssetOrigin: 0
@@ -1001,16 +1001,16 @@ MonoBehaviour:
   m_ViewMode: 1
   m_StartGridSize: 96
   m_LastFolders:
-  - Assets/_Project/Scripts/Gamification
+  - Assets
   m_LastFoldersGridSize: 96
   m_LastProjectPath: C:\Unity\WheelchairVR_Prototype
   m_LockTracker:
     m_IsLocked: 0
   m_FolderTreeState:
-    scrollPos: {x: 0, y: 175}
-    m_SelectedIDs: 22fe0000
-    m_LastClickedID: 65058
-    m_ExpandedIDs: 00000000c6fd0000c8fd0000cafd0000ccfd0000cefd0000d0fd0000d2fd0000d4fd0000d6fd0000d8fd0000dafd0000dcfd0000defd0000e0fd0000e2fd0000e4fd0000e6fd0000e8fd0000eafd0000ecfd0000eefd0000f0fd0000f2fd0000f4fd0000
+    scrollPos: {x: 0, y: 60}
+    m_SelectedIDs: c6fd0000
+    m_LastClickedID: 64966
+    m_ExpandedIDs: 0000000086ff000088ff00008aff00008cff00008eff000090ff000092ff000094ff000096ff000098ff00009aff00009cff00009eff0000a0ff0000a2ff0000a4ff0000a6ff0000a8ff0000aaff0000acff0000aeff0000b0ff0000b2ff0000b4ff0000b6ff0000b8ff0000baff0000bcff0000beff0000c0ff0000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1039,7 +1039,7 @@ MonoBehaviour:
     scrollPos: {x: 0, y: 0}
     m_SelectedIDs: 
     m_LastClickedID: 0
-    m_ExpandedIDs: 00000000c6fd0000c8fd0000cafd0000ccfd0000cefd0000d0fd0000d2fd0000d4fd0000d6fd0000d8fd0000dafd0000dcfd0000defd0000e0fd0000e2fd0000e4fd0000e6fd0000e8fd0000eafd0000ecfd0000eefd0000f0fd0000f2fd0000f4fd0000
+    m_ExpandedIDs: 0000000086ff000088ff00008aff00008cff00008eff000090ff000092ff000094ff000096ff000098ff00009aff00009cff00009eff0000a0ff0000a2ff0000a4ff0000a6ff0000a8ff0000aaff0000acff0000aeff0000b0ff0000b2ff0000b4ff0000b6ff0000b8ff0000baff0000bcff0000beff0000c0ff0000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1068,7 +1068,7 @@ MonoBehaviour:
     m_SelectedInstanceIDs: 
     m_LastClickedInstanceID: 0
     m_HadKeyboardFocusLastEvent: 1
-    m_ExpandedInstanceIDs: c623000000000000
+    m_ExpandedInstanceIDs: c6230000464b010000000000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
