@@ -882,6 +882,26 @@ PrefabInstance:
       propertyPath: levelID
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 6775272091049819747, guid: 74f6947801bd363498a1d0ffa8932bb5, type: 3}
+      propertyPath: timeFor2Stars
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 6775272091049819747, guid: 74f6947801bd363498a1d0ffa8932bb5, type: 3}
+      propertyPath: timeFor3Stars
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 6775272091049819747, guid: 74f6947801bd363498a1d0ffa8932bb5, type: 3}
+      propertyPath: maxSlidesFor2Stars
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6775272091049819747, guid: 74f6947801bd363498a1d0ffa8932bb5, type: 3}
+      propertyPath: maxSlidesFor3Stars
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6775272091049819747, guid: 74f6947801bd363498a1d0ffa8932bb5, type: 3}
+      propertyPath: maxCollisionsFor2Stars
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7171533155573630285, guid: 74f6947801bd363498a1d0ffa8932bb5, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
