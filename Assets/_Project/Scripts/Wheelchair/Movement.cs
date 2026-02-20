@@ -531,6 +531,12 @@ public class Movement : MonoBehaviour
             float normalizedSpeed = Mathf.Abs(currentSpeed) / maxSpeedNormal;
             multiplier *= (1f + normalizedSpeed * 0.8f);
             rotationEfficiency = 100f;
+
+            // --- NEW CODE: Invert steering when going in reverse ---
+            if (currentSpeed < 0)
+            {
+                multiplier *= -1f; // Reverses the rotation direction
+            }
         }
     }
 

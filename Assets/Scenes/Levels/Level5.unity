@@ -405,9 +405,29 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1657020475813383135, guid: 101f9bc750dac574996366b361f560d2, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1897369529543351909, guid: 101f9bc750dac574996366b361f560d2, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -1.211
+      objectReference: {fileID: 0}
+    - target: {fileID: 1897369529543351909, guid: 101f9bc750dac574996366b361f560d2, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.101
+      objectReference: {fileID: 0}
+    - target: {fileID: 1897369529543351909, guid: 101f9bc750dac574996366b361f560d2, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.776
+      objectReference: {fileID: 0}
     - target: {fileID: 2328609963954928549, guid: 101f9bc750dac574996366b361f560d2, type: 3}
       propertyPath: m_Name
       value: Restroom
+      objectReference: {fileID: 0}
+    - target: {fileID: 4230504611783981136, guid: 101f9bc750dac574996366b361f560d2, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:
@@ -3060,7 +3080,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 646888896587959858, guid: 5aac716a11271124887a33ec1836f27b, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.45961
+      value: -0.561
       objectReference: {fileID: 0}
     - target: {fileID: 646888896587959858, guid: 5aac716a11271124887a33ec1836f27b, type: 3}
       propertyPath: m_LocalPosition.z
