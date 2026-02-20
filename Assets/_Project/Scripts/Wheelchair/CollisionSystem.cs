@@ -13,6 +13,10 @@ public class CollisionSystem : MonoBehaviour
     [SerializeField] private bool backBlocked = false;
     [SerializeField] private bool wallSliding = false;
 
+    [Header("=== Debug Settings ===")]
+    [Tooltip("Enable this to print collision names to the Console and draw red lines in Scene view.")]
+    public bool enableCollisionDebug = true;
+
     [Header("=== Detection Settings ===")]
     [Tooltip("Minimum collision point height to be considered (ignores ground)")]
     [SerializeField] private float minCollisionHeight = 0.2f;
@@ -172,6 +176,16 @@ public class CollisionSystem : MonoBehaviour
         // Check if should ignore this collision
         if (ShouldIgnoreCollision(hit))
             return;
+
+        // Debugging: Print collision info and draw hit point in Scene view
+        if (enableCollisionDebug)
+        {
+            // Print the exact object name, tag, and layer to the Unity Console
+            Debug.Log($"<color=orange>[Collision Debug]</color> Wheelchair hit: <b>{hit.gameObject.name}</b> | Tag: {hit.gameObject.tag}");
+
+            // Draw a red line in the Scene view showing exactly WHERE the hit happened
+            Debug.DrawRay(hit.point, hit.normal * 1.5f, Color.red, 2f);
+        }
 
         // Prevent collision spam
         float timeSinceLastCollision = Time.time - lastValidCollisionTime;
@@ -351,7 +365,7 @@ public class CollisionSystem : MonoBehaviour
     }
 
 
-/// <summary>
+    /// <summary>
     /// Processes side collision and calculates slide direction
     /// </summary>
     private void ProcessSideCollision(ControllerColliderHit hit, Vector3 dirToObstacle)
@@ -376,9 +390,9 @@ public class CollisionSystem : MonoBehaviour
                 if (LevelManager.Instance != null)
                 {
                     LevelManager.Instance.RegisterSlide();
-                    
+
                     // Update the specific slide timer
-                    lastSlideTime = Time.time; 
+                    lastSlideTime = Time.time;
                 }
             }
         }
