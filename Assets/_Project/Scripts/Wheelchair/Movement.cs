@@ -38,6 +38,13 @@ public class Movement : MonoBehaviour
     [Tooltip("Can rotate without moving forward/backward? (Only works with front steering)")]
     public bool rotationInPlace = false;
 
+    [Header("=== Level Start Settings ===")]
+    [Tooltip("The speed mode this specific level should start with.")]
+    public SpeedMode startingSpeedMode = SpeedMode.Slow;
+
+    [Tooltip("The steering mode this specific level should start with.")]
+    public WheelController.SteeringType startingSteeringMode = WheelController.SteeringType.FrontSteering;
+
     [Header("=== Driving Modes ===")]
     [Tooltip("Current speed mode")]
     public SpeedMode currentMode = SpeedMode.Normal;
@@ -116,6 +123,26 @@ public class Movement : MonoBehaviour
         SetupComponents();
         ConvertSpeeds();
         InitializeCache();
+        InitializeLevelSettings();
+    }
+
+    /// <summary>
+    /// Applies the starting speed and steering modes defined in the Inspector for this specific level.
+    /// </summary>
+    private void InitializeLevelSettings()
+    {
+        // 1. Set the initial speed mode (Slow / Normal / Off)
+        currentMode = startingSpeedMode;
+
+        // 2. Set the initial steering mode (Front / Rear)
+        if (wheelController != null)
+        {
+            wheelController.SetSteeringType(startingSteeringMode);
+        }
+        else
+        {
+            Debug.LogWarning("WheelController is missing! Cannot set initial steering type.");
+        }
     }
 
     /// <summary>

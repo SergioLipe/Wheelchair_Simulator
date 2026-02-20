@@ -412,4 +412,14 @@ public class WheelController : MonoBehaviour
     {
         return steeringType;
     }
+
+    /// <summary>
+    /// Forces a specific steering type and updates dependencies automatically
+    /// </summary>
+    public void SetSteeringType(SteeringType newType)
+    {
+        steeringType = newType;
+        ResetSteering();
+        ConfigureMovementScript();
+    }
 }
