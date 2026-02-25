@@ -10194,6 +10194,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5773b51c4320e044ebcc770f2a7e4088, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  showInterface: 1
   maxSpeedNormal: 6
   maxSpeedSlow: 3
   reverseSpeed: 2
@@ -10201,6 +10202,8 @@ MonoBehaviour:
   brakingTime: 1.5
   rotationSpeed: 45
   rotationInPlace: 0
+  startingSpeedMode: 1
+  startingSteeringMode: 0
   currentMode: 1
   effectsAudio: {fileID: 2460939904801887666}
   modeChangeSound: {fileID: 8300000, guid: 58f1d424e08dec74fbde134e66fa04b3, type: 3}
@@ -10294,6 +10297,7 @@ MonoBehaviour:
   frontBlocked: 0
   backBlocked: 0
   wallSliding: 0
+  enableCollisionDebug: 1
   minCollisionHeight: 0.2
   maxGroundAngle: 45
   ignoreTags:
