@@ -1,39 +1,43 @@
 using UnityEngine;
 
 /// <summary>
-/// Controls a pedestrian traffic light and toggles a hazard zone.
-/// Includes an option to choose whether the light starts Green or Red.
+/// Controls a pedestrian traffic light system.
+/// Switches between Red and Green states, toggles associated hazards, and controls cars.
 /// </summary>
 public class PedestrianTrafficLight : MonoBehaviour
 {
-    [Header("=== Light Objects ===")]
-    [Tooltip("Drag the Red Glow object here.")]
+    [Header("=== Light Visuals ===")]
+    [Tooltip("The GameObject representing the Red light glow.")]
     public GameObject redLightObject;
     
-    [Tooltip("Drag the Green Glow object here.")]
+    [Tooltip("The GameObject representing the Green light glow.")]
     public GameObject greenLightObject;
 
-    [Header("=== Crosswalk Hazard ===")]
-    [Tooltip("Drag the invisible Box Collider (the hazard zone) here.")]
-    public Collider crosswalkHazard;
+    [Header("=== Hazard Management ===")]
+    [Tooltip("List of hazard objects (e.g., triggers on the road) to enable during Red light.")]
+    public GameObject[] hazardObjects;
 
-    [Header("=== Timers & Settings ===")]
-    [Tooltip("How many seconds the Red light stays on.")]
+    [Header("=== Car Management ===")]
+    [Tooltip("List of cars that should move ONLY when the pedestrian light is Red.")]
+    public CarMovement[] cars;
+
+    [Header("=== Timing Settings ===")]
+    [Tooltip("Duration in seconds for the Red light phase.")]
     public float redDuration = 5.0f;
     
-    [Tooltip("How many seconds the Green light stays on.")]
+    [Tooltip("Duration in seconds for the Green light phase.")]
     public float greenDuration = 5.0f;
 
-    [Tooltip("Check this box if you want the light to start Green. Leave unchecked to start Red.")]
+    [Tooltip("If true, the cycle starts with the Green light. Otherwise, starts with Red.")]
     public bool startGreen = false;
 
-    // Internal variables to track state and time
+    // Internal state tracking
     private float timer;
     private bool isRed;
 
     void Start()
     {
-        // Check the setting chosen in the Inspector to decide how to start
+        // Initialize the traffic light based on the 'startGreen' toggle
         if (startGreen)
         {
             SetGreenLight();
@@ -46,10 +50,10 @@ public class PedestrianTrafficLight : MonoBehaviour
 
     void Update()
     {
-        // Countdown the timer
+        // Countdown the active phase timer
         timer -= Time.deltaTime;
 
-        // When the timer reaches zero, switch the lights
+        // Switch states when the timer reaches zero
         if (timer <= 0f)
         {
             if (isRed)
@@ -63,39 +67,75 @@ public class PedestrianTrafficLight : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Activates the Red light, enables hazards, and allows cars to move.
+    /// </summary>
     private void SetRedLight()
     {
         isRed = true;
         
-        // Turn ON the red light, turn OFF the green light
-        redLightObject.SetActive(true);
-        greenLightObject.SetActive(false);
+        // Visuals
+        if (redLightObject != null) redLightObject.SetActive(true);
+        if (greenLightObject != null) greenLightObject.SetActive(false);
         
-        // Turn ON the hazard zone (Danger!)
-        if (crosswalkHazard != null)
-        {
-            crosswalkHazard.enabled = true;
-        }
+        // Logic: Enable hazards (Road is dangerous for pedestrians)
+        ToggleHazards(true);
+        
+        // Logic: Allow cars to move (Green for cars)
+        ToggleCars(true);
 
-        // Reset the timer
         timer = redDuration;
     }
 
+    /// <summary>
+    /// Activates the Green light, disables hazards, and forces cars to stop.
+    /// </summary>
     private void SetGreenLight()
     {
         isRed = false;
         
-        // Turn OFF the red light, turn ON the green light
-        redLightObject.SetActive(false);
-        greenLightObject.SetActive(true);
+        // Visuals
+        if (redLightObject != null) redLightObject.SetActive(false);
+        if (greenLightObject != null) greenLightObject.SetActive(true);
         
-        // Turn OFF the hazard zone (Safe!)
-        if (crosswalkHazard != null)
-        {
-            crosswalkHazard.enabled = false;
-        }
+        // Logic: Disable hazards (Road is safe for pedestrians)
+        ToggleHazards(false);
+        
+        // Logic: Force cars to stop (Red for cars)
+        ToggleCars(false);
 
-        // Reset the timer
         timer = greenDuration;
+    }
+
+    /// <summary>
+    /// Helper method to enable or disable all hazards assigned to this traffic light.
+    /// </summary>
+    private void ToggleHazards(bool activeState)
+    {
+        if (hazardObjects == null) return;
+
+        foreach (GameObject hazard in hazardObjects)
+        {
+            if (hazard != null)
+            {
+                hazard.SetActive(activeState);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Helper method to tell all assigned cars whether they can move or not.
+    /// </summary>
+    private void ToggleCars(bool canMoveState)
+    {
+        if (cars == null) return;
+
+        foreach (CarMovement car in cars)
+        {
+            if (car != null)
+            {
+                car.canMove = canMoveState;
+            }
+        }
     }
 }
