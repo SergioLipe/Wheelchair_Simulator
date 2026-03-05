@@ -3,6 +3,7 @@ using UnityEngine;
 /// <summary>
 /// Controls a pedestrian traffic light system.
 /// Switches between Red and Green states, toggles associated hazards, and controls cars.
+/// Allows for a unique duration on the very first light cycle.
 /// </summary>
 public class PedestrianTrafficLight : MonoBehaviour
 {
@@ -21,11 +22,18 @@ public class PedestrianTrafficLight : MonoBehaviour
     [Tooltip("List of cars that should move ONLY when the pedestrian light is Red.")]
     public CarMovement[] cars;
 
-    [Header("=== Timing Settings ===")]
-    [Tooltip("Duration in seconds for the Red light phase.")]
+    [Header("=== Initial Timing Settings ===")]
+    [Tooltip("Duration in seconds for the VERY FIRST Red light phase.")]
+    public float initialRedDuration = 10.0f;
+    
+    [Tooltip("Duration in seconds for the VERY FIRST Green light phase.")]
+    public float initialGreenDuration = 10.0f;
+
+    [Header("=== Normal Loop Timing Settings ===")]
+    [Tooltip("Duration in seconds for all subsequent Red light phases.")]
     public float redDuration = 5.0f;
     
-    [Tooltip("Duration in seconds for the Green light phase.")]
+    [Tooltip("Duration in seconds for all subsequent Green light phases.")]
     public float greenDuration = 5.0f;
 
     [Tooltip("If true, the cycle starts with the Green light. Otherwise, starts with Red.")]
@@ -34,6 +42,10 @@ public class PedestrianTrafficLight : MonoBehaviour
     // Internal state tracking
     private float timer;
     private bool isRed;
+    
+    // Track if it is the first time running each phase
+    private bool isFirstRed = true;
+    private bool isFirstGreen = true;
 
     void Start()
     {
@@ -84,7 +96,16 @@ public class PedestrianTrafficLight : MonoBehaviour
         // Logic: Allow cars to move (Green for cars)
         ToggleCars(true);
 
-        timer = redDuration;
+        // Apply initial duration if it's the first time, otherwise use normal duration
+        if (isFirstRed)
+        {
+            timer = initialRedDuration;
+            isFirstRed = false; // Never use the initial time again
+        }
+        else
+        {
+            timer = redDuration;
+        }
     }
 
     /// <summary>
@@ -104,7 +125,16 @@ public class PedestrianTrafficLight : MonoBehaviour
         // Logic: Force cars to stop (Red for cars)
         ToggleCars(false);
 
-        timer = greenDuration;
+        // Apply initial duration if it's the first time, otherwise use normal duration
+        if (isFirstGreen)
+        {
+            timer = initialGreenDuration;
+            isFirstGreen = false; // Never use the initial time again
+        }
+        else
+        {
+            timer = greenDuration;
+        }
     }
 
     /// <summary>
