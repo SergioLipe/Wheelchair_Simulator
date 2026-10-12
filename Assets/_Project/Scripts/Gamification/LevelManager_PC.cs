@@ -314,20 +314,9 @@ public class LevelManager_PC : MonoBehaviour
 
     private void CalculateResults()
     {
-        int stars = 1;
-
-        if (elapsedTime <= timeFor3Stars &&
-            collisionCount <= maxCollisionsFor3Stars &&
-            slideCount <= maxSlidesFor3Stars)
-        {
-            stars = 3;
-        }
-        else if (elapsedTime <= timeFor2Stars &&
-                 collisionCount <= maxCollisionsFor2Stars &&
-                 slideCount <= maxSlidesFor2Stars)
-        {
-            stars = 2;
-        }
+        int stars = LevelScoring.CalculateStars(elapsedTime, collisionCount, slideCount,
+            timeFor3Stars, maxCollisionsFor3Stars, maxSlidesFor3Stars,
+            timeFor2Stars, maxCollisionsFor2Stars, maxSlidesFor2Stars);
 
         // Progresso (melhor resultado) guardado no perfil do paciente; gravado em disco junto com a sessao
         ProgressManager.RecordStars(levelID, stars);

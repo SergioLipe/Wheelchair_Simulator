@@ -1,34 +1,14 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using TMPro;
-using System.Collections;
-using System.Collections.Generic;
-using System;
-using UnityEngine.Localization.Settings;   // <-- NOVO: localização
 
 /// <summary>
-/// VR version of the Main Menu Manager.
-/// (localização integrada: textos dinâmicos vêm da String Table "GameText")
+/// Menu principal da versao VR.
+/// A logica comum (lista de perfis, historico, exportacao, niveis) esta no MainMenuManagerBase.
+/// Aqui ficam so as partes do VR: criar perfil, escolha do tipo de direcao e recentrar o canvas.
 /// </summary>
-public class MainMenuManager_VR : MonoBehaviour
+public class MainMenuManager_VR : MainMenuManagerBase
 {
-    [Header("--- Main UI Elements ---")]
-    [Tooltip("Drag the main game title text here so it hides during history")]
-    public GameObject mainTitle;
-
-    [Header("--- Profile Selection Panel ---")]
-    public GameObject profileSelectionPanel;
-    public GameObject levelSelectionPanel;
-    public TMP_Text txtCurrentProfile;
-
-    [Header("--- VR: Existing Profiles List ---")]
-    [Tooltip("Drag the Content GameObject of the ProfilesList ScrollView (where rows will be cloned)")]
-    public Transform profilesListContent;
-
-    [Tooltip("Drag the BtnProfileTemplate GameObject. Must contain children: Btn_LoginProfile, InputEditName, Btn_EditProfile, Btn_DeleteProfile.")]
-    public GameObject profileButtonTemplate;
-
     [Tooltip("Optional: text shown when there are no saved profiles yet")]
     public GameObject noProfilesPlaceholder;
 
@@ -36,24 +16,7 @@ public class MainMenuManager_VR : MonoBehaviour
     public TMP_InputField inputFieldNewProfileID;
     public Button btnCreateProfile;
 
-    [Header("--- VR: Confirm Delete Popup ---")]
-    public GameObject confirmDeletePanel;
-    public TMP_Text txtConfirmMessage;
-    public Button btnConfirmYes;
-    public Button btnConfirmNo;
-
     [Header("--- VR: View History ---")]
-    public Button btnViewHistory;
-
-    [Tooltip("VR: Panel shown when user clicks 'View history' to choose which profile to inspect")]
-    public GameObject historyProfileSelectorPanel;
-
-    [Tooltip("VR: Where history profile buttons will be cloned")]
-    public Transform historyProfilesListContent;
-
-    [Tooltip("VR: Template button for history profile selector")]
-    public GameObject historyProfileButtonTemplate;
-
     [Tooltip("VR: Button to close the history profile selector and go back to login")]
     public Button btnCloseHistoryProfileSelector;
 
@@ -83,101 +46,13 @@ public class MainMenuManager_VR : MonoBehaviour
     [Tooltip("Text color when the button is NOT the selected steering type")]
     public Color steeringUnselectedTextColor = new Color(1f, 1f, 1f, 0.706f); // branco 180a
 
-    [Header("--- History: Levels Panel ---")]
-    public GameObject historyLevelsPanel;
-    public Button btnCloseHistory;
-    public Button[] historyLevelButtons;
-    public TMP_Text txtHistorySubtitle;
-    public Button btnHistFreestyle;
-    public TMP_Text txtHistFreestyleCount;
-
-    [Header("--- History: Attempts Panel ---")]
-    public GameObject historyAttemptsPanel;
-    public TMP_Text txtHistoryDetails;
-    public Button btnBackToHistLevels;
-
-    [Header("--- History: Attempts Panel Header ---")]
-    public TMP_Text txtPatientName;
-    public TMP_Text txtLevelTitle;
-    public TMP_Text txtAttemptsCount;
-
-    [Header("--- Main Game Level Buttons ---")]
-    public Button[] levelButtons;
-
-    [Header("--- UI Colors ---")]
-    public Color unlockedBGColor = new Color(0f, 0.78f, 0.32f, 1f);
-    public Color freeStyleColor = new Color(0f, 0.6f, 1f, 1f);
-    public Color lockedBGColor = new Color(0.2f, 0.2f, 0.2f, 0.8f);
-    public Color starEarnedColor = new Color(1f, 0.84f, 0f, 1f);
-    public Color starEmptyColor = new Color(0f, 0f, 0f, 0.4f);
-
-    [Header("--- History Button Colors ---")]
-    public Color historyHasRecordsColor = new Color(0.086f, 0.639f, 0.290f, 1f);
-    public Color historyNoRecordsColor = new Color(0.32f, 0.32f, 0.32f, 0.5f);
-
-    private List<GameObject> spawnedProfileButtons = new List<GameObject>();
-    private List<GameObject> spawnedHistoryProfileButtons = new List<GameObject>();
-    private string profileToDelete = null;
-
-    // === [LOCALIZAÇÃO] Helper para buscar strings da tabela com fallback ===
-    private const string TABLE = "GameText";
-    private string L(string key, string fallback)
-    {
-        try
-        {
-            string v = LocalizationSettings.StringDatabase.GetLocalizedString(TABLE, key);
-            return string.IsNullOrEmpty(v) ? fallback : v;
-        }
-        catch { return fallback; }
-    }
+    protected override string LogTag => "[MainMenuManager_VR]";
+    protected override TMP_InputField NewProfileInputField => inputFieldNewProfileID;
 
     private void Start()
     {
-        // 1. Setup Initial Panels Visibility
-        bool hasActiveProfile = ProfileManager.Instance != null
-                                && ProfileManager.Instance.currentPlayer != null
-                                && !string.IsNullOrEmpty(ProfileManager.Instance.currentPlayer.profileID);
-
-        if (hasActiveProfile)
-        {
-            if (profileSelectionPanel != null) profileSelectionPanel.SetActive(false);
-            if (levelSelectionPanel != null) levelSelectionPanel.SetActive(true);
-
-            if (txtCurrentProfile != null)
-                txtCurrentProfile.text = ProfileManager.Instance.currentPlayer.profileID;
-        }
-        else
-        {
-            if (profileSelectionPanel != null) profileSelectionPanel.SetActive(true);
-            if (levelSelectionPanel != null) levelSelectionPanel.SetActive(false);
-        }
-
-        if (historyLevelsPanel != null) historyLevelsPanel.SetActive(false);
-        if (historyAttemptsPanel != null) historyAttemptsPanel.SetActive(false);
-        if (historyProfileSelectorPanel != null) historyProfileSelectorPanel.SetActive(false);
-        if (confirmDeletePanel != null) confirmDeletePanel.SetActive(false);
-
-        // 2. Hide button templates
-        if (profileButtonTemplate != null) profileButtonTemplate.SetActive(false);
-        if (historyProfileButtonTemplate != null) historyProfileButtonTemplate.SetActive(false);
-
-        // 3. Populate the profiles list
-        PopulateProfilesList();
-
-        // 4. Setup "Create new profile" button
         if (btnCreateProfile != null) btnCreateProfile.onClick.AddListener(OnCreateProfileClicked);
 
-        // 5. Setup history navigation buttons
-        if (btnViewHistory != null) btnViewHistory.onClick.AddListener(OpenHistoryProfileSelector);
-        if (btnCloseHistoryProfileSelector != null) btnCloseHistoryProfileSelector.onClick.AddListener(CloseHistoryProfileSelector);
-        if (btnCloseHistory != null) btnCloseHistory.onClick.AddListener(CloseHistory);
-        if (btnBackToHistLevels != null) btnBackToHistLevels.onClick.AddListener(BackToHistoryLevels);
-
-        // 6. Confirm delete popup buttons
-        if (btnConfirmYes != null) btnConfirmYes.onClick.AddListener(OnConfirmDeleteYes);
-        if (btnConfirmNo != null) btnConfirmNo.onClick.AddListener(OnConfirmDeleteNo);
-
-        // 7. Setup steering type selection buttons
         if (btnSteeringFront != null)
         {
             btnSteeringFront.onClick.RemoveAllListeners();
@@ -190,15 +65,19 @@ public class MainMenuManager_VR : MonoBehaviour
         }
         RefreshSteeringButtonsVisual();
 
-        // 8. Setup main game levels
-        InitializeAllLevels();
+        SetupCommonMenu(btnCloseHistoryProfileSelector);
 
-        // 9. Force recenter the VR canvas
+        // Force recenter the VR canvas
         VRCanvasPositioner positioner = FindObjectOfType<VRCanvasPositioner>();
         if (positioner != null)
         {
             positioner.RecenterCanvas();
         }
+    }
+
+    protected override void OnProfilesListPopulated(int profileCount)
+    {
+        if (noProfilesPlaceholder != null) noProfilesPlaceholder.SetActive(profileCount == 0);
     }
 
     // ==========================================
@@ -244,130 +123,17 @@ public class MainMenuManager_VR : MonoBehaviour
     }
 
     // ==========================================
-    // VR PROFILE LIST WITH LOGIN / EDIT / DELETE
+    // LOGIN / CREATE PROFILE
     // ==========================================
 
-    private void PopulateProfilesList()
-    {
-        foreach (GameObject oldBtn in spawnedProfileButtons)
-        {
-            if (oldBtn != null) Destroy(oldBtn);
-        }
-        spawnedProfileButtons.Clear();
-
-        if (profileButtonTemplate == null || profilesListContent == null)
-        {
-            Debug.LogWarning("[MainMenuManager_VR] Profile template or content reference missing.");
-            return;
-        }
-
-        if (profileButtonTemplate.activeSelf)
-            profileButtonTemplate.SetActive(false);
-
-        string[] savedIDs = SaveManager.GetAllProfileIDs();
-
-        if (noProfilesPlaceholder != null)
-        {
-            noProfilesPlaceholder.SetActive(savedIDs == null || savedIDs.Length == 0);
-        }
-
-        if (savedIDs == null || savedIDs.Length == 0) return;
-
-        foreach (string profileID in savedIDs)
-        {
-            GameObject newRow = Instantiate(profileButtonTemplate, profilesListContent);
-            newRow.SetActive(true);
-            newRow.name = "Row_Profile_" + profileID;
-
-            string capturedID = profileID;
-
-            Transform loginBtnT = newRow.transform.Find("Btn_LoginProfile");
-            Transform editBtnT = newRow.transform.Find("Btn_EditProfile");
-            Transform deleteBtnT = newRow.transform.Find("Btn_DeleteProfile");
-            Transform inputEditT = newRow.transform.Find("InputEditName");
-
-            Button loginBtn = null;
-            TMP_Text loginText = null;
-            if (loginBtnT != null)
-            {
-                loginBtn = loginBtnT.GetComponent<Button>();
-                loginText = loginBtnT.GetComponentInChildren<TMP_Text>();
-
-                if (loginText != null) loginText.text = profileID;
-
-                if (loginBtn != null)
-                {
-                    loginBtn.onClick.RemoveAllListeners();
-                    loginBtn.onClick.AddListener(() => LoginWithProfile(capturedID));
-                }
-            }
-            else
-            {
-                Debug.LogWarning($"[MainMenuManager_VR] Btn_LoginProfile not found in row '{newRow.name}'.");
-            }
-
-            TMP_InputField editInput = null;
-            if (inputEditT != null)
-            {
-                editInput = inputEditT.GetComponent<TMP_InputField>();
-                inputEditT.gameObject.SetActive(false);
-            }
-
-            if (editBtnT != null)
-            {
-                Button editBtn = editBtnT.GetComponent<Button>();
-                if (editBtn != null && editInput != null && loginBtn != null)
-                {
-                    Button capturedLogin = loginBtn;
-                    TMP_InputField capturedInput = editInput;
-                    TMP_Text capturedLoginText = loginText;
-
-                    editBtn.onClick.RemoveAllListeners();
-                    editBtn.onClick.AddListener(() => StartRenameProfile(capturedID, capturedLogin, capturedInput, capturedLoginText));
-                }
-            }
-
-            if (deleteBtnT != null)
-            {
-                Button deleteBtn = deleteBtnT.GetComponent<Button>();
-                if (deleteBtn != null)
-                {
-                    deleteBtn.onClick.RemoveAllListeners();
-                    deleteBtn.onClick.AddListener(() => RequestDeleteProfile(capturedID));
-                }
-            }
-
-            spawnedProfileButtons.Add(newRow);
-        }
-    }
+    protected override void LoginFromProfileList(string profileID) => LoginWithProfile(profileID);
 
     public void LoginWithProfile(string profileID)
     {
         if (string.IsNullOrEmpty(profileID)) return;
 
-        PlayerData loadedData = SaveManager.LoadProfile(profileID);
-
-        if (loadedData != null)
-        {
-            ProfileManager.Instance.SetActiveProfile(loadedData);
-        }
-        else
-        {
-            PlayerData newData = PlayerData.CreateNew(profileID);
-            SaveManager.SaveProfile(newData);
-            ProfileManager.Instance.SetActiveProfile(newData);
-        }
-
-        if (txtCurrentProfile != null)
-            txtCurrentProfile.text = ProfileManager.Instance.currentPlayer.profileID;
-
-        profileSelectionPanel.SetActive(false);
-        levelSelectionPanel.SetActive(true);
-
+        ActivateProfile(profileID);
         RefreshSteeringButtonsVisual();
-
-        // Estrelas e desbloqueios sao por perfil: atualizar os botoes para este paciente
-        InitializeAllLevels();
     }
 
     public void OnCreateProfileClicked()
@@ -375,568 +141,19 @@ public class MainMenuManager_VR : MonoBehaviour
         if (inputFieldNewProfileID == null) return;
 
         string typedID = SaveManager.SanitizeProfileID(inputFieldNewProfileID.text);
-
         if (string.IsNullOrEmpty(typedID))
         {
             Debug.LogWarning("Atenção: O ID não pode estar vazio!");
             return;
         }
 
-        PlayerData loadedData = SaveManager.LoadProfile(typedID);
-        bool isNewProfile = (loadedData == null);
+        bool isNewProfile = !SaveManager.ProfileExists(typedID);
 
-        if (loadedData != null)
-        {
-            ProfileManager.Instance.SetActiveProfile(loadedData);
-        }
-        else
-        {
-            PlayerData newData = PlayerData.CreateNew(typedID);
-            SaveManager.SaveProfile(newData);
-            ProfileManager.Instance.SetActiveProfile(newData);
-        }
-
-        if (txtCurrentProfile != null)
-            txtCurrentProfile.text = ProfileManager.Instance.currentPlayer.profileID;
+        ActivateProfile(typedID);
 
         if (isNewProfile) PopulateProfilesList();
-
-        if (inputFieldNewProfileID != null) inputFieldNewProfileID.text = "";
-
-        profileSelectionPanel.SetActive(false);
-        levelSelectionPanel.SetActive(true);
+        inputFieldNewProfileID.text = "";
 
         RefreshSteeringButtonsVisual();
-
-        // Estrelas e desbloqueios sao por perfil: atualizar os botoes para este paciente
-        InitializeAllLevels();
-    }
-
-    public void BackToProfileSelection()
-    {
-        if (levelSelectionPanel != null) levelSelectionPanel.SetActive(false);
-        if (profileSelectionPanel != null) profileSelectionPanel.SetActive(true);
-
-        PopulateProfilesList();
-
-        if (inputFieldNewProfileID != null) inputFieldNewProfileID.text = "";
-    }
-
-    // ==========================================
-    // EDIT (RENAME) PROFILE
-    // ==========================================
-
-    private void StartRenameProfile(string oldID, Button loginBtn, TMP_InputField editInput, TMP_Text loginText)
-    {
-        if (loginBtn == null || editInput == null) return;
-
-        loginBtn.gameObject.SetActive(false);
-        editInput.gameObject.SetActive(true);
-        editInput.text = oldID;
-
-        Transform row = loginBtn.transform.parent;
-        if (row != null)
-        {
-            Transform editBtnT = row.Find("Btn_EditProfile");
-            Transform deleteBtnT = row.Find("Btn_DeleteProfile");
-            if (editBtnT != null) editBtnT.gameObject.SetActive(false);
-            if (deleteBtnT != null) deleteBtnT.gameObject.SetActive(false);
-        }
-
-        editInput.Select();
-        editInput.ActivateInputField();
-
-        editInput.onEndEdit.RemoveAllListeners();
-        editInput.onEndEdit.AddListener((newName) =>
-        {
-            FinishRenameProfile(oldID, newName, loginBtn, editInput, loginText);
-        });
-    }
-
-    private void FinishRenameProfile(string oldID, string newName, Button loginBtn, TMP_InputField editInput, TMP_Text loginText)
-    {
-        if (editInput != null) editInput.gameObject.SetActive(false);
-        if (loginBtn != null) loginBtn.gameObject.SetActive(true);
-
-        if (loginBtn != null)
-        {
-            Transform row = loginBtn.transform.parent;
-            if (row != null)
-            {
-                Transform editBtnT = row.Find("Btn_EditProfile");
-                Transform deleteBtnT = row.Find("Btn_DeleteProfile");
-                if (editBtnT != null) editBtnT.gameObject.SetActive(true);
-                if (deleteBtnT != null) deleteBtnT.gameObject.SetActive(true);
-            }
-        }
-
-        string trimmed = newName != null ? newName.Trim() : "";
-
-        if (string.IsNullOrEmpty(trimmed) || trimmed == oldID) return;
-
-        bool success = SaveManager.RenameProfile(oldID, trimmed);
-
-        if (success)
-        {
-            PopulateProfilesList();
-        }
-        else
-        {
-            if (loginText != null) loginText.text = oldID;
-            Debug.LogWarning($"[MainMenuManager_VR] Failed to rename '{oldID}' to '{trimmed}'.");
-        }
-    }
-
-    // ==========================================
-    // DELETE PROFILE WITH CONFIRMATION
-    // ==========================================
-
-    public void RequestDeleteProfile(string profileID)
-    {
-        if (string.IsNullOrEmpty(profileID)) return;
-
-        profileToDelete = profileID;
-
-        if (confirmDeletePanel != null)
-        {
-            if (txtConfirmMessage != null)
-            {
-                // [LOCALIZAÇÃO] mensagem de confirmação traduzida
-                // key: confirm_delete_profile  (usa {0} para o nome do perfil)
-                string template = L("confirm_delete_profile",
-                    "Tem a certeza que quer apagar o perfil <b><color=#F87171>{0}</color></b>?\n\nEsta ação não pode ser desfeita.");
-                txtConfirmMessage.text = string.Format(template, profileID);
-            }
-            confirmDeletePanel.SetActive(true);
-        }
-        else
-        {
-            DeleteProfile(profileID);
-            profileToDelete = null;
-        }
-
-        
-    }
-
-    public void OnConfirmDeleteYes()
-    {
-        if (!string.IsNullOrEmpty(profileToDelete))
-        {
-            DeleteProfile(profileToDelete);
-            profileToDelete = null;
-        }
-        if (confirmDeletePanel != null) confirmDeletePanel.SetActive(false);
-    }
-
-    public void OnConfirmDeleteNo()
-    {
-        profileToDelete = null;
-        if (confirmDeletePanel != null) confirmDeletePanel.SetActive(false);
-    }
-
-    private void DeleteProfile(string profileID)
-    {
-        if (string.IsNullOrEmpty(profileID)) return;
-
-        bool deleted = SaveManager.DeleteProfile(profileID);
-
-        if (deleted)
-        {
-            PopulateProfilesList();
-        }
-        else
-        {
-            Debug.LogWarning($"[MainMenuManager_VR] Failed to delete profile '{profileID}'.");
-        }
-    }
-
-    // ==========================================
-    // HISTORY: PROFILE SELECTOR
-    // ==========================================
-
-    public void OpenHistoryProfileSelector()
-    {
-        if (historyProfileSelectorPanel == null)
-        {
-            string[] ids = SaveManager.GetAllProfileIDs();
-            if (ids != null && ids.Length > 0)
-            {
-                OpenHistoryLevelsForProfile(ids[0]);
-            }
-            return;
-        }
-
-        profileSelectionPanel.SetActive(false);
-        historyProfileSelectorPanel.SetActive(true);
-
-        if (mainTitle != null) mainTitle.SetActive(false);
-
-        PopulateHistoryProfilesList();
-    }
-
-    private void PopulateHistoryProfilesList()
-    {
-        foreach (GameObject oldBtn in spawnedHistoryProfileButtons)
-        {
-            if (oldBtn != null) Destroy(oldBtn);
-        }
-        spawnedHistoryProfileButtons.Clear();
-
-        if (historyProfileButtonTemplate == null || historyProfilesListContent == null) return;
-
-        if (historyProfileButtonTemplate.activeSelf)
-            historyProfileButtonTemplate.SetActive(false);
-
-        string[] savedIDs = SaveManager.GetAllProfileIDs();
-        if (savedIDs == null || savedIDs.Length == 0) return;
-
-        foreach (string profileID in savedIDs)
-        {
-            GameObject newRow = Instantiate(historyProfileButtonTemplate, historyProfilesListContent);
-            newRow.SetActive(true);
-            newRow.name = "Row_HistProfile_" + profileID;
-
-            string capturedID = profileID;
-
-            Transform selectBtnT = newRow.transform.Find("Btn_SelectProfile");
-
-            Button selectBtn = null;
-            TMP_Text selectText = null;
-
-            if (selectBtnT != null)
-            {
-                selectBtn = selectBtnT.GetComponent<Button>();
-                selectText = selectBtnT.GetComponentInChildren<TMP_Text>();
-            }
-            else
-            {
-                selectBtn = newRow.GetComponent<Button>();
-                selectText = newRow.GetComponentInChildren<TMP_Text>();
-            }
-
-            if (selectText != null) selectText.text = profileID;
-
-            if (selectBtn != null)
-            {
-                selectBtn.onClick.RemoveAllListeners();
-                selectBtn.onClick.AddListener(() => OpenHistoryLevelsForProfile(capturedID));
-            }
-
-            spawnedHistoryProfileButtons.Add(newRow);
-        }
-    }
-
-    public void CloseHistoryProfileSelector()
-    {
-        if (historyProfileSelectorPanel != null) historyProfileSelectorPanel.SetActive(false);
-        if (profileSelectionPanel != null) profileSelectionPanel.SetActive(true);
-        if (mainTitle != null) mainTitle.SetActive(true);
-    }
-
-    // ==========================================
-    // HISTORY SYSTEM
-    // ==========================================
-
-    public void OpenHistoryLevelsForProfile(string profileID)
-    {
-        PlayerData data = SaveManager.LoadProfile(profileID);
-        if (data == null) return;
-
-        if (historyProfileSelectorPanel != null) historyProfileSelectorPanel.SetActive(false);
-        profileSelectionPanel.SetActive(false);
-        historyLevelsPanel.SetActive(true);
-
-        if (mainTitle != null) mainTitle.SetActive(false);
-
-        if (txtHistorySubtitle != null)
-        {
-            // [LOCALIZAÇÃO] key: history_choose_level  (usa {0} para o nome do perfil)
-            string template = L("history_choose_level",
-                "Escolhe um nível para ver as tentativas de <color=#FCD34D>{0}</color>");
-            txtHistorySubtitle.text = string.Format(template, profileID);
-        }
-
-        for (int i = 0; i < historyLevelButtons.Length; i++)
-        {
-            if (historyLevelButtons[i] == null) continue;
-
-            int levelID = i + 1;
-            string targetLevelName = "Level" + levelID;
-
-            int attemptsCount = 0;
-            foreach (SessionRecord record in data.sessionHistory)
-            {
-                if (record.levelName == targetLevelName) attemptsCount++;
-            }
-
-            bool hasPlayedThisLevel = attemptsCount > 0;
-
-            Button btn = historyLevelButtons[i];
-            btn.interactable = hasPlayedThisLevel;
-
-            Image bgImage = btn.GetComponent<Image>();
-            if (bgImage != null)
-            {
-                bgImage.color = hasPlayedThisLevel ? historyHasRecordsColor : historyNoRecordsColor;
-            }
-
-            Transform attemptsTransform = btn.transform.Find("AttemptsText");
-            if (attemptsTransform != null)
-            {
-                TMP_Text attemptsText = attemptsTransform.GetComponent<TMP_Text>();
-                if (attemptsText != null)
-                {
-                    if (hasPlayedThisLevel)
-                    {
-                        // [LOCALIZAÇÃO] singular/plural de "Tentativa(s)"
-                        string label = attemptsCount == 1
-                            ? L("attempt_sing", "Tentativa")
-                            : L("attempt_plur", "Tentativas");
-                        attemptsText.text = $"{attemptsCount} {label}";
-                        attemptsText.color = new Color(1f, 1f, 1f, 0.85f);
-                    }
-                    else
-                    {
-                        // [LOCALIZAÇÃO] "sem registos"
-                        attemptsText.text = L("no_records", "sem registos");
-                        attemptsText.color = new Color(1f, 1f, 1f, 0.4f);
-                    }
-                }
-            }
-
-            Transform numberTransform = btn.transform.Find("Number");
-            if (numberTransform != null)
-            {
-                TMP_Text numberText = numberTransform.GetComponent<TMP_Text>();
-                if (numberText != null)
-                {
-                    numberText.color = hasPlayedThisLevel
-                        ? new Color(1f, 1f, 1f, 1f)
-                        : new Color(1f, 1f, 1f, 0.4f);
-                }
-            }
-
-            btn.onClick.RemoveAllListeners();
-            if (hasPlayedThisLevel)
-            {
-                PlayerData capturedData = data;
-                string capturedLevelName = targetLevelName;
-                btn.onClick.AddListener(() => ShowAttemptsForLevel(capturedData, capturedLevelName));
-            }
-        }
-
-        ConfigureFreestyleHistoryButton(data);
-    }
-
-    private void ConfigureFreestyleHistoryButton(PlayerData data)
-    {
-        if (btnHistFreestyle == null) return;
-
-        int freestyleCount = 0;
-        foreach (SessionRecord record in data.sessionHistory)
-        {
-            if (record.levelName == "Freestyle" || record.levelName == "Level11" || record.levelName == "FreestyleLevel")
-            {
-                freestyleCount++;
-            }
-        }
-
-        bool hasFreestyleRecords = freestyleCount > 0;
-        btnHistFreestyle.interactable = hasFreestyleRecords;
-
-        if (txtHistFreestyleCount != null)
-        {
-            if (hasFreestyleRecords)
-            {
-                // [LOCALIZAÇÃO] "MODO LIVRE — X sessão/sessões registada(s)"
-                string freeMode = L("free_mode_label", "MODO LIVRE");
-                string label = freestyleCount == 1
-                    ? L("session_sing", "sessão registada")
-                    : L("session_plur", "sessões registadas");
-                txtHistFreestyleCount.text = $"{freeMode} — {freestyleCount} {label}";
-            }
-            else
-            {
-                // [LOCALIZAÇÃO] "MODO LIVRE — sem sessões registadas"
-                string freeMode = L("free_mode_label", "MODO LIVRE");
-                string noSessions = L("no_sessions", "sem sessões registadas");
-                txtHistFreestyleCount.text = $"{freeMode} — {noSessions}";
-            }
-        }
-
-        btnHistFreestyle.onClick.RemoveAllListeners();
-        if (hasFreestyleRecords)
-        {
-            PlayerData capturedData = data;
-            btnHistFreestyle.onClick.AddListener(() => ShowAttemptsForLevel(capturedData, "Freestyle"));
-        }
-    }
-
-    public void ShowAttemptsForLevel(PlayerData data, string levelName)
-    {
-        historyLevelsPanel.SetActive(false);
-        historyAttemptsPanel.SetActive(true);
-
-        int totalAttempts = 0;
-        foreach (SessionRecord record in data.sessionHistory)
-        {
-            if (record.levelName == levelName) totalAttempts++;
-        }
-
-        if (txtPatientName != null) txtPatientName.text = data.profileID;
-        if (txtLevelTitle != null) txtLevelTitle.text = levelName;
-
-        if (txtAttemptsCount != null)
-        {
-            // [LOCALIZAÇÃO] singular/plural "Tentativa(s) registada(s)"
-            string label = totalAttempts == 1
-                ? L("attempt_rec_sing", "Tentativa registada")
-                : L("attempt_rec_plur", "Tentativas registadas");
-            txtAttemptsCount.text = $"{totalAttempts} {label}";
-        }
-
-        string historyText = SessionHistoryFormatter.BuildAttemptsText(data, levelName, HistoryL);
-
-        if (txtHistoryDetails != null)
-            txtHistoryDetails.text = historyText;
-    }
-
-    // ==========================================
-    // EXPORTAR HISTORICO (CSV)
-    // ==========================================
-
-    [Header("--- Exportar histórico (CSV) ---")]
-    [Tooltip("Opcional: texto onde aparece o caminho do ficheiro exportado")]
-    public TMP_Text txtExportStatus;
-
-    // Traducao usada pelo SessionHistoryFormatter
-    private string HistoryL(string key, string fallback) => L(key, fallback);
-
-    /// <summary>
-    /// Exporta o historico de todos os pacientes para um CSV (abre no Excel).
-    /// Ligar ao OnClick de um botao "Exportar histórico".
-    /// </summary>
-    public void Button_ExportHistoryCsv()
-    {
-        string path = ClinicalExport.ExportAllProfiles();
-
-        if (txtExportStatus != null)
-        {
-            txtExportStatus.text = path != null
-                ? string.Format(L("export_done", "Histórico exportado para:\n{0}"), path)
-                : L("export_failed", "Não foi possível exportar o histórico.");
-        }
-
-#if UNITY_STANDALONE || UNITY_EDITOR
-        // No PC abre a pasta para o terapeuta encontrar logo o ficheiro
-        if (path != null) Application.OpenURL("file:///" + System.IO.Path.GetDirectoryName(path).Replace("\\", "/"));
-#endif
-    }
-
-    public void CloseHistory()
-    {
-        historyLevelsPanel.SetActive(false);
-        profileSelectionPanel.SetActive(true);
-
-        PopulateProfilesList();
-
-        if (mainTitle != null) mainTitle.SetActive(true);
-    }
-
-    public void BackToHistoryLevels()
-    {
-        historyAttemptsPanel.SetActive(false);
-        historyLevelsPanel.SetActive(true);
-    }
-
-    // ==========================================
-    // MAIN GAME LEVELS LOGIC
-    // ==========================================
-
-    private void InitializeAllLevels()
-    {
-        if (levelButtons == null || levelButtons.Length == 0) return;
-
-        for (int i = 0; i < levelButtons.Length; i++)
-        {
-            if (levelButtons[i] == null) continue;
-
-            int levelID = i + 1;
-
-            int currentStars = ProgressManager.GetBestStars(levelID);
-
-            int prevStars = 0;
-            if (levelID > 1)
-            {
-                prevStars = ProgressManager.GetBestStars(levelID - 1);
-            }
-
-            bool isFreeStyleLevel = (i == levelButtons.Length - 1);
-            bool isUnlocked = (levelID == 1) || isFreeStyleLevel || (prevStars >= 1) || ProgressManager.IsUnlockAll();
-
-            Button btn = levelButtons[i];
-            Image bgImage = btn.GetComponent<Image>();
-            TMP_Text levelText = btn.GetComponentInChildren<TMP_Text>();
-            Transform starContainer = btn.transform.Find("StarContainer");
-
-            btn.interactable = isUnlocked;
-
-            if (isUnlocked)
-            {
-                if (bgImage != null)
-                {
-                    if (i == levelButtons.Length - 1) bgImage.color = freeStyleColor;
-                    else bgImage.color = unlockedBGColor;
-                }
-
-                if (levelText != null) levelText.color = Color.white;
-
-                if (starContainer != null)
-                {
-                    starContainer.gameObject.SetActive(true);
-                    Image[] stars = starContainer.GetComponentsInChildren<Image>();
-
-                    for (int s = 0; s < stars.Length; s++)
-                    {
-                        if (s < currentStars) stars[s].color = starEarnedColor;
-                        else stars[s].color = starEmptyColor;
-                    }
-                }
-
-                int captureID = levelID;
-                btn.onClick.RemoveAllListeners();
-                btn.onClick.AddListener(() => LoadGameLevel(captureID));
-            }
-            else
-            {
-                if (bgImage != null) bgImage.color = lockedBGColor;
-                if (levelText != null) levelText.color = Color.gray;
-                if (starContainer != null) starContainer.gameObject.SetActive(false);
-            }
-        }
-    }
-
-    public void LoadGameLevel(int levelNumber)
-    {
-        string sceneName = "Level" + levelNumber;
-        Debug.Log($"A carregar a cena: {sceneName} (Steering: {SteeringPreference.CurrentSteering})");
-        SceneManager.LoadScene(sceneName);
-    }
-
-    public void ResetProgress()
-    {
-        ProgressManager.ResetProgress();
-        InitializeAllLevels();
-    }
-
-    public void UnlockAllLevels()
-    {
-        ProgressManager.SetUnlockAll();
-        InitializeAllLevels();
-    }
-
-    public void QuitGame()
-    {
-        Application.Quit();
     }
 }

@@ -672,7 +672,7 @@ public class Movement : MonoBehaviour
 
         // Modern styling with gradient-like semi-transparent background
         GUIStyle boxStyle = new GUIStyle(GUI.skin.box);
-        boxStyle.normal.background = MakeTex(2, 2, new Color(0.15f, 0.18f, 0.22f, 0.75f));
+        boxStyle.normal.background = GetTex(ref hudBoxTex, new Color(0.15f, 0.18f, 0.22f, 0.75f));
         boxStyle.border = new RectOffset(8, 8, 8, 8);
 
         GUIStyle labelStyle = new GUIStyle(GUI.skin.label);
@@ -731,7 +731,7 @@ public class Movement : MonoBehaviour
         if (emergencyBrake)
         {
             GUIStyle emergencyBoxStyle = new GUIStyle(GUI.skin.box);
-            emergencyBoxStyle.normal.background = MakeTex(2, 2, new Color(0.9f, 0.2f, 0.2f, 0.85f));
+            emergencyBoxStyle.normal.background = GetTex(ref brakeBoxTex, new Color(0.9f, 0.2f, 0.2f, 0.85f));
 
             GUI.Box(new Rect(Screen.width / 2 - 150, 15, 300, 40), "", emergencyBoxStyle);
 
@@ -784,6 +784,23 @@ public class Movement : MonoBehaviour
         keyStyle.normal.textColor = new Color(1f, 0.7f, 0.7f, 1f);
         GUI.Label(new Rect(rightX + 20, y, 100, 18), "ESPAÇO", keyStyle);
         GUI.Label(new Rect(rightX + 125, y, 110, 18), "Travão", descStyle);
+    }
+
+    // Texturas do HUD criadas uma unica vez (antes era criada uma Texture2D nova
+    // em cada chamada ao OnGUI, que nunca era libertada -> fuga de memoria).
+    private Texture2D hudBoxTex;
+    private Texture2D brakeBoxTex;
+
+    private Texture2D GetTex(ref Texture2D cached, Color col)
+    {
+        if (cached == null) cached = MakeTex(2, 2, col);
+        return cached;
+    }
+
+    private void OnDestroy()
+    {
+        if (hudBoxTex != null) Destroy(hudBoxTex);
+        if (brakeBoxTex != null) Destroy(brakeBoxTex);
     }
 
     /// <summary>
