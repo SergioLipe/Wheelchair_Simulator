@@ -1,5 +1,8 @@
 using System.IO;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.TestTools;
 
 /// <summary>
 /// Testes do SaveManager. Usam uma pasta temporaria (DataDirectoryOverride),
@@ -76,6 +79,7 @@ public class SaveManagerTests
         SaveManager.SaveProfile(p); // segunda gravacao cria o .bak
 
         File.WriteAllText(ProfilePath("B"), "{ isto nao e json");
+        LogAssert.Expect(LogType.Error, new Regex("Erro ao ler perfil")); // o erro e esperado: o ficheiro esta corrompido
 
         PlayerData loaded = SaveManager.LoadProfile("B");
         Assert.IsNotNull(loaded, "Devia recuperar a partir do .bak");
