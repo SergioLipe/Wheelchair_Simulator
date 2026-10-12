@@ -22,9 +22,39 @@ public class SimpleHandTracker : MonoBehaviour
 
     private XRHandSubsystem handSubsystem;
 
+    /// <summary>True enquanto a mao esta a ser seguida. Quando false, a pose deste Transform esta congelada.</summary>
+    public bool IsTracked { get; private set; }
+
+    // Sem visualRoot, esconde so os renderers: desativar o proprio GameObject parava este Update
+    // e a mao nunca mais voltava a aparecer.
+    private Renderer[] ownRenderers;
+    private bool rendererVisible = true;
+
     void OnEnable()
     {
         TryGetSubsystem();
+    }
+
+    void OnDisable()
+    {
+        IsTracked = false;
+    }
+
+    private void SetVisible(bool visible)
+    {
+        if (visualRoot != null && visualRoot != gameObject)
+        {
+            if (visualRoot.activeSelf != visible) visualRoot.SetActive(visible);
+            return;
+        }
+
+        if (rendererVisible == visible) return;
+        if (ownRenderers == null) ownRenderers = GetComponentsInChildren<Renderer>(true);
+        foreach (Renderer r in ownRenderers)
+        {
+            if (r != null) r.enabled = visible;
+        }
+        rendererVisible = visible;
     }
 
     void TryGetSubsystem()
@@ -48,15 +78,15 @@ public class SimpleHandTracker : MonoBehaviour
             : handSubsystem.leftHand;
 
         bool tracked = hand.isTracked;
-        GameObject toHide = visualRoot != null ? visualRoot : gameObject;
+        IsTracked = tracked;
 
         if (!tracked)
         {
-            if (hideWhenNotTracked && toHide.activeSelf) toHide.SetActive(false);
+            if (hideWhenNotTracked) SetVisible(false);
             return;
         }
 
-        if (hideWhenNotTracked && !toHide.activeSelf) toHide.SetActive(true);
+        if (hideWhenNotTracked) SetVisible(true);
 
         // Pose do pulso no espaço do XR Origin
         var wristJoint = hand.GetJoint(XRHandJointID.Wrist);

@@ -34,12 +34,67 @@ public class HandVirtualJoystick : MonoBehaviour
     [Tooltip("Inclinação visual da alavanca no offset máximo (graus).")]
     public float maxStickTilt = 30f;
 
+    [Header("=== Segurança ===")]
+    [Tooltip("Só agarra se, nesse momento, a mão estiver perto do centro (input abaixo deste valor). " +
+             "Evita que a cadeira arranque de repente quando a mão entra na zona de agarrar descentrada.")]
+    [Range(0.05f, 1f)]
+    public float maxInputToEngage = 0.3f;
+
+    [Tooltip("Se a pose da mão não mudar nada durante este tempo (s), considera-se tracking perdido " +
+             "(a pose fica congelada quando o tracking falha).")]
+    public float staleHandTime = 0.2f;
+
+    [Tooltip("Opcional: tracker da mão. Se vazio, é procurado no handTransform.")]
+    public SimpleHandTracker handTracker;
+
     [Header("=== Debug ===")]
     [SerializeField] private Vector2 output = Vector2.zero;
     [SerializeField] private bool isGrabbing = false;
 
     public Vector2 Output => output;
     public bool IsActive => isGrabbing || alwaysActive;
+
+    private Vector3 lastHandPos;
+    private float unchangedTime;
+
+    void Start()
+    {
+        if (handTracker == null && handTransform != null)
+            handTracker = handTransform.GetComponentInParent<SimpleHandTracker>();
+    }
+
+    /// <summary>
+    /// False se a mão deixou de ser seguida. Nesse caso a pose do handTransform fica congelada e,
+    /// sem esta verificação, a cadeira continuava a andar sozinha com o último input.
+    /// </summary>
+    private bool IsHandReliable()
+    {
+        if (!handTransform.gameObject.activeInHierarchy) return false;
+        if (handTracker != null && handTracker.isActiveAndEnabled && !handTracker.IsTracked) return false;
+
+        Vector3 p = handTransform.position;
+        bool unchanged = p == lastHandPos;
+        lastHandPos = p;
+
+        if (!unchanged)
+        {
+            unchangedTime = 0f;
+            return true;
+        }
+
+        unchangedTime += Time.unscaledDeltaTime;
+        return unchangedTime < staleHandTime;
+    }
+
+    private Vector2 ComputeInput()
+    {
+        Vector3 worldOffset = handTransform.position - joystickAnchor.position;
+        float forwardAmount = Vector3.Dot(worldOffset, joystickAnchor.forward);
+        float rightAmount   = Vector3.Dot(worldOffset, joystickAnchor.right);
+        return new Vector2(
+            Mathf.Clamp(rightAmount / maxOffset, -1f, 1f),
+            Mathf.Clamp(forwardAmount / maxOffset, -1f, 1f));
+    }
 
     void Update()
 {
@@ -54,7 +109,9 @@ public class HandVirtualJoystick : MonoBehaviour
 
     if (alwaysActive)
         isGrabbing = true;
-    else if (!isGrabbing && dist <= grabRadius)
+    else if (!IsHandReliable())
+        isGrabbing = false;
+    else if (!isGrabbing && dist <= grabRadius && ComputeInput().magnitude <= maxInputToEngage)
         isGrabbing = true;
     else if (isGrabbing && dist > releaseRadius)
         isGrabbing = false;

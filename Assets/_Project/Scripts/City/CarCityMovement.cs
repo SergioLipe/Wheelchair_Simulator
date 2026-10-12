@@ -41,6 +41,9 @@ public class CarCityMovement : MonoBehaviour
     public float maxTimeOffMagnet = 5f;
     public float maxStationaryTime = 15f;
 
+    [Tooltip("Nao teletransportar carros a menos desta distancia da camara (m): em VR um carro a desaparecer/aparecer a frente do paciente e desorientador")]
+    public float minTeleportDistanceFromCamera = 25f;
+
     [HideInInspector]
     public float timeOffMagnet = 0f;
 
@@ -188,7 +191,7 @@ public class CarCityMovement : MonoBehaviour
         else
         {
             timeOffMagnet += dt;
-            if (timeOffMagnet >= maxTimeOffMagnet)
+            if (timeOffMagnet >= maxTimeOffMagnet && !IsNearCamera())
             {
                 TeleportToNextSpawn();
                 return;
@@ -202,11 +205,13 @@ public class CarCityMovement : MonoBehaviour
 
         if (isPhysicallyStopped)
         {
-            bool isLegallyWaiting = (isInStopZone && !canMove) || isYielding;
+            // Parado a espera do paciente (ou atras de outro carro numa fila) tambem e espera legitima:
+            // antes o carro teletransportava-se a frente do paciente ao fim de 15 s.
+            bool isLegallyWaiting = (isInStopZone && !canMove) || isYielding || playerDetectedLastFrame || centerBlocked;
             if (!isLegallyWaiting)
             {
                 stationaryTimer += dt;
-                if (stationaryTimer >= maxStationaryTime)
+                if (stationaryTimer >= maxStationaryTime && !IsNearCamera())
                 {
                     Debug.Log($"[Traffic System] Car blocked for {maxStationaryTime}s! Teleporting...");
                     TeleportToNextSpawn();
@@ -474,6 +479,13 @@ public class CarCityMovement : MonoBehaviour
     /// <summary>
     /// Resets the car's state and moves it to a random TrafficSpawnZone.
     /// </summary>
+    private bool IsNearCamera()
+    {
+        Camera cam = Camera.main;
+        if (cam == null) return false;
+        return (cam.transform.position - myTransform.position).sqrMagnitude < minTeleportDistanceFromCamera * minTeleportDistanceFromCamera;
+    }
+
     private void TeleportToNextSpawn()
     {
         if (TrafficSpawnZone.allSpawnZones.Count == 0)

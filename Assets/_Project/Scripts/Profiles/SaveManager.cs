@@ -6,6 +6,11 @@ public static class SaveManager
     private const string BackupSuffix = ".bak";
     private const string TempSuffix = ".tmp";
 
+    // Pasta dos perfis. Os testes apontam-na para uma pasta temporaria para nunca tocarem nos dados reais.
+    public static string DataDirectoryOverride;
+    private static string DataDirectory =>
+        string.IsNullOrEmpty(DataDirectoryOverride) ? Application.persistentDataPath : DataDirectoryOverride;
+
     /// <summary>
     /// Limpa um ID escrito pelo utilizador para poder ser usado como nome de ficheiro.
     /// Caracteres invalidos (/ \ : * ? " < > | ...) passam a '_'. Devolve "" se nao sobrar nada.
@@ -28,7 +33,7 @@ public static class SaveManager
 
     private static string GetProfilePath(string profileID)
     {
-        return Path.Combine(Application.persistentDataPath, profileID + "_profile.json");
+        return Path.Combine(DataDirectory, profileID + "_profile.json");
     }
 
     // Saves the player data to a JSON file.
@@ -137,7 +142,7 @@ public static class SaveManager
     public static string[] GetAllProfileIDs()
     {
         // Get all files ending with "_profile.json" in the folder
-        string[] files = Directory.GetFiles(Application.persistentDataPath, "*_profile.json");
+        string[] files = Directory.GetFiles(DataDirectory, "*_profile.json");
         string[] profileIDs = new string[files.Length];
         for (int i = 0; i < files.Length; i++)
         {
