@@ -74,6 +74,9 @@ public class MovementVR : MonoBehaviour
     [Tooltip("Suaviza na vista os degraus/passeios (o CharacterController sobe-os instantaneamente)")]
     public bool smoothStepUps = true;
 
+    [Header("=== Modelo de rotacao ===")]
+    public WheelchairTurnSettings turnSettings = new WheelchairTurnSettings();
+
     [Header("=== Level Start Settings ===")]
     [Tooltip("The speed mode this specific level should start with.")]
     public SpeedMode startingSpeedMode = SpeedMode.Slow;
@@ -145,6 +148,9 @@ public class MovementVR : MonoBehaviour
     private float smoothedHorizontalInput = 0f;
     private float tryingToTurnTime = 0f;
     private float currentTurnRate = 0f; // graus/s, com aceleracao limitada
+    private Vector3 pendingPivotDisplacement = Vector3.zero; // deslocamento por rodar a volta do eixo motor
+    private readonly float[] pivotLocalZ = new float[2];
+    private readonly bool[] pivotComputed = new bool[2];
 
     // Realistic Physics State
     private float currentAccelerationVelocity = 0f;
@@ -545,90 +551,54 @@ public class MovementVR : MonoBehaviour
 
     void ProcessRotation(float horizontalInput)
     {
-        float rotationMultiplier = 1f;
-        bool isRearSteering = false;
-        rotationEfficiency = 100f;
+        bool isRearSteering = wheelController != null
+                              && currentSteeringTypeCached == WheelController.SteeringType.RearSteering;
 
-        if (wheelController != null)
+        float targetTurnRate;
+        if (turnSettings != null && turnSettings.realisticModel)
         {
-            isRearSteering = currentSteeringTypeCached == WheelController.SteeringType.RearSteering;
-            if (isRearSteering)
-            {
-                rotationMultiplier = 2.5f;
-            }
-        }
-
-        bool isStationary = Mathf.Abs(currentSpeed) < 0.1f;
-
-        if (isRearSteering)
-        {
-            ProcessRearRotation(isStationary, horizontalInput, ref rotationMultiplier);
+            float baseRate = turnSettings.inPlaceTurnRate > 0f ? turnSettings.inPlaceTurnRate : rotationSpeed;
+            targetTurnRate = WheelchairDriveModel.TargetTurnRate(horizontalInput, smoothedVerticalInput, currentSpeed,
+                                                                 maxSpeedNormal, baseRate, turnSettings.highSpeedTurnFactor);
         }
         else
         {
-            ProcessFrontRotation(isStationary, ref rotationMultiplier);
+            targetTurnRate = horizontalInput * rotationSpeed *
+                             WheelchairDriveModel.LegacyRotationMultiplier(isRearSteering, currentSpeed, maxSpeedNormal, rotationInPlace);
         }
+        rotationEfficiency = Mathf.Abs(horizontalInput) > 0.01f ? Mathf.Abs(targetTurnRate) / Mathf.Max(rotationSpeed, 0.01f) * 100f : 100f;
 
         // [CONFORTO] Limitar velocidade e aceleracao angular: a rotacao nunca salta de valor
-        // (ex.: ao parar a meio de uma curva o multiplicador passa a 0 num so frame).
-        float targetTurnRate = Mathf.Clamp(horizontalInput * rotationSpeed * rotationMultiplier, -maxTurnRate, maxTurnRate);
+        targetTurnRate = Mathf.Clamp(targetTurnRate, -maxTurnRate, maxTurnRate);
         currentTurnRate = Mathf.MoveTowards(currentTurnRate, targetTurnRate, maxTurnAcceleration * Time.deltaTime);
 
-        myTransform.Rotate(0, currentTurnRate * Time.deltaTime, 0);
+        ApplyYaw(currentTurnRate * Time.deltaTime);
     }
 
-    private void ProcessRearRotation(bool isStationary, float horizontalInput, ref float multiplier)
+    /// <summary>
+    /// Roda a cadeira. No modelo realista roda a volta do eixo motor: o deslocamento
+    /// resultante e aplicado no proximo CharacterController.Move (respeita as colisoes).
+    /// </summary>
+    private void ApplyYaw(float deltaYawDeg)
     {
-        if (isStationary)
-        {
-            rotationEfficiency = 0f;
-            if (Mathf.Abs(horizontalInput) > 0.1f)
-            {
-                tryingToTurnTime = 1f;
-            }
-            multiplier = 0f;
-        }
-        else
-        {
-            float normalizedSpeed = Mathf.Abs(currentSpeed) / maxSpeedNormal;
-            float baseEfficiency = Mathf.Lerp(0.2f, 1f, normalizedSpeed);
-            multiplier *= baseEfficiency;
+        if (deltaYawDeg == 0f) return;
 
-            if (currentSpeed < 0)
-            {
-                multiplier *= -0.8f;
-                rotationEfficiency = baseEfficiency * 80f;
-            }
-            else
-            {
-                rotationEfficiency = baseEfficiency * 100f;
-            }
+        if (turnSettings != null && turnSettings.realisticModel && turnSettings.pivotAroundDriveAxle)
+        {
+            pendingPivotDisplacement += WheelchairDriveModel.PivotDisplacement(myTransform.rotation, GetPivotLocalZ(), deltaYawDeg);
         }
+        myTransform.Rotate(0, deltaYawDeg, 0);
     }
 
-    private void ProcessFrontRotation(bool isStationary, ref float multiplier)
+    private float GetPivotLocalZ()
     {
-        if (isStationary && !rotationInPlace)
+        int idx = currentSteeringTypeCached == WheelController.SteeringType.RearSteering ? 1 : 0;
+        if (!pivotComputed[idx])
         {
-            rotationEfficiency = 0f;
-            multiplier = 0f;
+            pivotLocalZ[idx] = WheelchairDriveModel.ComputePivotLocalZ(myTransform, wheelController, currentSteeringTypeCached, turnSettings);
+            pivotComputed[idx] = true;
         }
-        else if (isStationary && rotationInPlace)
-        {
-            multiplier *= 1.5f;
-            rotationEfficiency = 100f;
-        }
-        else
-        {
-            float normalizedSpeed = Mathf.Abs(currentSpeed) / maxSpeedNormal;
-            multiplier *= (1f + normalizedSpeed * 0.8f);
-            rotationEfficiency = 100f;
-
-            if (currentSpeed < 0)
-            {
-                multiplier *= -1f;
-            }
-        }
+        return pivotLocalZ[idx];
     }
 
     // ===== MOVEMENT =====
@@ -647,7 +617,8 @@ public class MovementVR : MonoBehaviour
         }
 
         movementDirection.y = movementVelocity.y;
-        controller.Move(movementDirection * Time.deltaTime);
+        controller.Move(movementDirection * Time.deltaTime + pendingPivotDisplacement);
+        pendingPivotDisplacement = Vector3.zero;
     }
 
     void ApplyGravity()
@@ -667,7 +638,7 @@ public class MovementVR : MonoBehaviour
     {
         // [CONFORTO] A rotacao tambem trava, mas sem parar a vista de forma instantanea
         currentTurnRate = Mathf.MoveTowards(currentTurnRate, 0f, maxTurnAcceleration * 2f * Time.deltaTime);
-        if (currentTurnRate != 0f) myTransform.Rotate(0, currentTurnRate * Time.deltaTime, 0);
+        ApplyYaw(currentTurnRate * Time.deltaTime);
 
         currentSpeed = Mathf.SmoothDamp(currentSpeed, 0f, ref currentAccelerationVelocity, emergencyBrakeTime * 0.5f);
 
@@ -852,6 +823,7 @@ public class MovementVR : MonoBehaviour
     public void ForceStop()
     {
         currentTurnRate = 0f;
+        pendingPivotDisplacement = Vector3.zero;
         currentSpeed = 0f;
         targetSpeed = 0f;
         currentAccelerationVelocity = 0f;

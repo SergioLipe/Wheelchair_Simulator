@@ -72,6 +72,7 @@ public class SceneSmokeTests
             }
 
             WriteReport(sceneName, hasVrRig);
+            WritePivotReport(sceneName);
         }
         finally
         {
@@ -105,6 +106,31 @@ public class SceneSmokeTests
             return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// Regista a distancia ao eixo de rotacao medida nas rodas do modelo real (frontal / traseira),
+    /// para confirmar que o modelo de rotacao usa valores fisicamente plausiveis.
+    /// </summary>
+    private static void WritePivotReport(string sceneName)
+    {
+        System.Type model = System.Type.GetType("WheelchairDriveModel, Assembly-CSharp");
+        System.Type settingsType = System.Type.GetType("WheelchairTurnSettings, Assembly-CSharp");
+        System.Type steeringType = System.Type.GetType("WheelController+SteeringType, Assembly-CSharp");
+        if (model == null || settingsType == null || steeringType == null) return;
+
+        MethodInfo compute = model.GetMethod("ComputePivotLocalZ");
+        object settings = System.Activator.CreateInstance(settingsType);
+        var sb = new StringBuilder();
+
+        foreach (MonoBehaviour wc in Object.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (wc == null || wc.GetType().Name != "WheelController") continue;
+            object front = compute.Invoke(null, new[] { wc.transform, wc, System.Enum.ToObject(steeringType, 0), settings });
+            object rear = compute.Invoke(null, new[] { wc.transform, wc, System.Enum.ToObject(steeringType, 1), settings });
+            sb.AppendLine($"  PIVOT {wc.gameObject.name}: frontal={front:0.000} m  traseira={rear:0.000} m");
+        }
+        if (sb.Length > 0) File.AppendAllText(ReportPath, $"--- pivots {sceneName}\n{sb}\n");
     }
 
     private void WriteReport(string sceneName, bool hasVrRig)
