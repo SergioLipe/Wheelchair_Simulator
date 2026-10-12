@@ -106,6 +106,7 @@ public class MovementPC : MonoBehaviour
     [SerializeField] private float currentSpeed = 0f;
     [SerializeField] private float targetSpeed = 0f;
     [SerializeField] private bool emergencyBrake = false;
+    private SpeedMode modeBeforeBrake = SpeedMode.Slow;
     [SerializeField] private string currentSteeringType = "Frontal";
     [SerializeField] private float rotationEfficiency = 100f;
 
@@ -228,6 +229,8 @@ public class MovementPC : MonoBehaviour
     private void OnDestroy()
     {
         LocalizationSettings.SelectedLocaleChanged -= OnLocaleChanged;
+        if (hudBoxTex != null) Destroy(hudBoxTex);
+        if (brakeBoxTex != null) Destroy(brakeBoxTex);
     }
 
     private void OnLocaleChanged(UnityEngine.Localization.Locale newLocale)
@@ -389,12 +392,14 @@ public class MovementPC : MonoBehaviour
 
         if (brakeIsHeld && currentMode != SpeedMode.Off)
         {
+            modeBeforeBrake = currentMode;
             currentMode = SpeedMode.Off;
             emergencyBrake = true;
         }
         else if (!brakeIsHeld && emergencyBrake)
         {
-            currentMode = SpeedMode.Normal;
+            // Volta ao modo anterior (antes voltava sempre a Normal/8 km/h, mesmo em Interior)
+            currentMode = modeBeforeBrake;
             emergencyBrake = false;
         }
     }
@@ -699,7 +704,7 @@ public class MovementPC : MonoBehaviour
         if (!showInterface || Time.timeScale == 0) return;
 
         GUIStyle boxStyle = new GUIStyle(GUI.skin.box);
-        boxStyle.normal.background = MakeTex(2, 2, new Color(0.15f, 0.18f, 0.22f, 0.75f));
+        boxStyle.normal.background = GetTex(ref hudBoxTex, new Color(0.15f, 0.18f, 0.22f, 0.75f));
         boxStyle.border = new RectOffset(8, 8, 8, 8);
 
         GUIStyle labelStyle = new GUIStyle(GUI.skin.label);
@@ -753,7 +758,7 @@ public class MovementPC : MonoBehaviour
         if (emergencyBrake)
         {
             GUIStyle emergencyBoxStyle = new GUIStyle(GUI.skin.box);
-            emergencyBoxStyle.normal.background = MakeTex(2, 2, new Color(0.9f, 0.2f, 0.2f, 0.85f));
+            emergencyBoxStyle.normal.background = GetTex(ref brakeBoxTex, new Color(0.9f, 0.2f, 0.2f, 0.85f));
 
             GUI.Box(new Rect(Screen.width / 2 - 150, 15, 300, 40), "", emergencyBoxStyle);
 
@@ -816,6 +821,17 @@ public class MovementPC : MonoBehaviour
         GUI.Label(new Rect(rightX + 20, y, 100, 18), lblControl, keyStyle);
         descStyle.normal.textColor = new Color(1f, 1f, 1f, 1f);
         GUI.Label(new Rect(rightX + 125, y, 110, 18), modoInput, descStyle);
+    }
+
+    // Texturas do HUD criadas uma unica vez (antes era criada uma Texture2D nova
+    // em cada chamada ao OnGUI, que nunca era libertada -> fuga de memoria).
+    private Texture2D hudBoxTex;
+    private Texture2D brakeBoxTex;
+
+    private Texture2D GetTex(ref Texture2D cached, Color col)
+    {
+        if (cached == null) cached = MakeTex(2, 2, col);
+        return cached;
     }
 
     private Texture2D MakeTex(int width, int height, Color col)

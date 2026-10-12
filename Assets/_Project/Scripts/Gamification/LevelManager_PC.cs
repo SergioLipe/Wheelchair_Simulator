@@ -185,6 +185,12 @@ public class LevelManager_PC : MonoBehaviour
         }
     }
 
+    // Janela perde o foco (Alt+Tab, etc.): pausar para o cronometro nao contar tempo fora do jogo
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        if (!hasFocus && enabled && isLevelActive && !isPaused) PauseGame();
+    }
+
     /// <summary>
     /// Pauses the game, shows the cursor, and opens the pause menu
     /// </summary>
@@ -307,17 +313,8 @@ public class LevelManager_PC : MonoBehaviour
             stars = 2;
         }
 
-        string saveKey = "Level_" + levelID + "_Stars";
-
-
-        int currentBest = PlayerPrefs.GetInt(saveKey, 0);
-
-        if (stars > currentBest)
-        {
-            PlayerPrefs.SetInt(saveKey, stars);
-            PlayerPrefs.Save();
-            Debug.Log($"Progresso do jogo gravado! Nível {levelID} completo com {stars} estrelas.");
-        }
+        // Progresso (melhor resultado) guardado no perfil do paciente; gravado em disco junto com a sessao
+        ProgressManager.RecordStars(levelID, stars);
 
         if (ProfileManager.Instance != null && ProfileManager.Instance.currentPlayer != null)
         {
@@ -346,7 +343,7 @@ public class LevelManager_PC : MonoBehaviour
         if (gameHUDPanel != null)
             gameHUDPanel.SetActive(false);
 
-        Movement wheelchairMovement = FindObjectOfType<Movement>();
+        MovementPC wheelchairMovement = FindObjectOfType<MovementPC>();
         if (wheelchairMovement != null)
         {
             wheelchairMovement.showInterface = false;

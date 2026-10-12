@@ -42,27 +42,28 @@ public class FinishLevelTrigger : MonoBehaviour
             Time.timeScale = 0f;
 
             // 1. Descobre quem é que tocou na meta (PC ou VR) e desliga os controlos
-            MonoBehaviour movementPC = other.transform.root.GetComponent("Movement") as MonoBehaviour;
-            if (movementPC != null) 
+            // (antes procurava "Movement" por nome, mas o PC usa MovementPC: só funcionava pelo fallback)
+            MovementPC movementPC = other.GetComponentInParent<MovementPC>();
+            if (movementPC == null) movementPC = other.GetComponentInChildren<MovementPC>();
+            if (movementPC != null)
             {
                 movementPC.enabled = false;
                 wasPC = true;
             }
 
-            MonoBehaviour movementVR = other.transform.root.GetComponent("MovementVR") as MonoBehaviour;
-            if (movementVR != null) 
+            MovementVR movementVR = other.GetComponentInParent<MovementVR>();
+            if (movementVR == null) movementVR = other.GetComponentInChildren<MovementVR>();
+            if (movementVR != null)
             {
                 movementVR.enabled = false;
                 wasVR = true;
             }
 
-            // Failsafe: se bateu com a cabeça e não encontrou logo o script na raiz
+            // Failsafe: se não encontrou o script, decide pelo gestor de nível que existe na cena
             if (!wasPC && !wasVR)
             {
-                if (other.GetComponentInChildren<Movement>() != null) wasPC = true;
-                else if (other.GetComponentInChildren<MovementVR>() != null) wasVR = true;
-                // Por defeito, assumimos PC se tudo o resto falhar
-                else wasPC = true; 
+                if (LevelManagerVR.Instance != null && LevelManager_PC.Instance == null) wasVR = true;
+                else wasPC = true;
             }
 
             StartCoroutine(FinishSequence());

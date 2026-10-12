@@ -135,6 +135,13 @@ public class HazardArea : MonoBehaviour
                 LevelManagerVR.Instance.isLevelActive = false;
             }
 
+            // Sem isto, no PC o ESC (pausar + retomar) voltava a pôr timeScale = 1
+            // e o paciente podia continuar e acabar o nível depois do Game Over.
+            if (LevelManager_PC.Instance != null)
+            {
+                LevelManager_PC.Instance.isLevelActive = false;
+            }
+
             // PC UI  --> definir a mensagem ANTES de ativar o painel
             ApplyHazardMessage(warningTextPC);
             if (hazardPanelPC != null) hazardPanelPC.SetActive(true);

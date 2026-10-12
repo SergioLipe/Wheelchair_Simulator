@@ -38,8 +38,7 @@ public class ProfileManager : MonoBehaviour
         if (defaultProfile == null)
         {
             // Create a new PlayerData instance
-            defaultProfile = new PlayerData();
-            defaultProfile.profileID = DefaultProfileId;
+            defaultProfile = PlayerData.CreateNew(DefaultProfileId);
             
             // The name in PT-PT for the UI to display
             defaultProfile.profileName = "Visitante";

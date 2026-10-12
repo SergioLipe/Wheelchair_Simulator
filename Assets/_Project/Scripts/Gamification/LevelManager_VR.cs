@@ -120,6 +120,24 @@ public class LevelManagerVR : MonoBehaviour
         }
     }
 
+    // Headset retirado ou menu Meta aberto: pausar para o cronometro nao contar tempo
+    // em que o paciente nao esta a conduzir (e requisito VRC da Meta).
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        if (!hasFocus) PauseIfPlaying();
+    }
+
+    private void OnApplicationPause(bool pauseStatus)
+    {
+        if (pauseStatus) PauseIfPlaying();
+    }
+
+    private void PauseIfPlaying()
+    {
+        if (!enabled || !isLevelActive || isPaused) return;
+        PauseGame();
+    }
+
     public void PauseGame()
     {
         isPaused = true;
@@ -200,17 +218,8 @@ public class LevelManagerVR : MonoBehaviour
         if (elapsedTime <= timeFor3Stars && collisionCount <= maxCollisionsFor3Stars && slideCount <= maxSlidesFor3Stars) stars = 3;
         else if (elapsedTime <= timeFor2Stars && collisionCount <= maxCollisionsFor2Stars && slideCount <= maxSlidesFor2Stars) stars = 2;
 
-        // --- GAME PROGRESS SAVE SYSTEM (PlayerPrefs) ---
-        // Only update if the new score is better than the previous best
-        string saveKey = "Level_" + levelID + "_Stars";
-        int currentBest = PlayerPrefs.GetInt(saveKey, 0);
-
-        if (stars > currentBest)
-        {
-            PlayerPrefs.SetInt(saveKey, stars);
-            PlayerPrefs.Save();
-            Debug.Log($"Progresso do jogo gravado! Nível {levelID} completo com {stars} estrelas (VR).");
-        }
+        // --- GAME PROGRESS (melhor resultado por perfil; gravado em disco junto com a sessao) ---
+        ProgressManager.RecordStars(levelID, stars);
 
         // --- PATIENT DATA SAVE SYSTEM (JSON) ---
         // Save session record so it appears in the Main Menu history panel

@@ -154,6 +154,7 @@ public class MovementVR : MonoBehaviour
 
     // [VRC] Focus state
     private bool wasFocusedBefore = true;
+    private bool lockedByFocusLoss = false;
 
     public enum SpeedMode { Slow, Normal, Off }
 
@@ -747,7 +748,12 @@ public class MovementVR : MonoBehaviour
         if (!hasFocus && wasFocusedBefore)
         {
             // Headset removed or user opened Meta menu
-            inputLocked = true;
+            // (a pausa do jogo/cronometro e feita pelo LevelManagerVR)
+            if (!inputLocked)
+            {
+                inputLocked = true;
+                lockedByFocusLoss = true;
+            }
 
             if (stopOnFocusLost)
             {
@@ -759,7 +765,12 @@ public class MovementVR : MonoBehaviour
         else if (hasFocus && !wasFocusedBefore)
         {
             // User put headset back on
-            inputLocked = false;
+            // So desbloqueia se foi a perda de foco que bloqueou (nao anular outros LockInput)
+            if (lockedByFocusLoss)
+            {
+                inputLocked = false;
+                lockedByFocusLoss = false;
+            }
             Debug.Log("[MovementVR] Focus restored — input unlocked");
         }
 

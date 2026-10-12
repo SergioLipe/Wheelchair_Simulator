@@ -353,8 +353,7 @@ public class MainMenuManager_VR : MonoBehaviour
         }
         else
         {
-            PlayerData newData = new PlayerData();
-            newData.profileID = profileID;
+            PlayerData newData = PlayerData.CreateNew(profileID);
             SaveManager.SaveProfile(newData);
             ProfileManager.Instance.SetActiveProfile(newData);
         }
@@ -366,13 +365,16 @@ public class MainMenuManager_VR : MonoBehaviour
         levelSelectionPanel.SetActive(true);
 
         RefreshSteeringButtonsVisual();
+
+        // Estrelas e desbloqueios sao por perfil: atualizar os botoes para este paciente
+        InitializeAllLevels();
     }
 
     public void OnCreateProfileClicked()
     {
         if (inputFieldNewProfileID == null) return;
 
-        string typedID = inputFieldNewProfileID.text.Trim();
+        string typedID = SaveManager.SanitizeProfileID(inputFieldNewProfileID.text);
 
         if (string.IsNullOrEmpty(typedID))
         {
@@ -389,8 +391,7 @@ public class MainMenuManager_VR : MonoBehaviour
         }
         else
         {
-            PlayerData newData = new PlayerData();
-            newData.profileID = typedID;
+            PlayerData newData = PlayerData.CreateNew(typedID);
             SaveManager.SaveProfile(newData);
             ProfileManager.Instance.SetActiveProfile(newData);
         }
@@ -406,6 +407,9 @@ public class MainMenuManager_VR : MonoBehaviour
         levelSelectionPanel.SetActive(true);
 
         RefreshSteeringButtonsVisual();
+
+        // Estrelas e desbloqueios sao por perfil: atualizar os botoes para este paciente
+        InitializeAllLevels();
     }
 
     public void BackToProfileSelection()
@@ -874,17 +878,16 @@ public class MainMenuManager_VR : MonoBehaviour
 
             int levelID = i + 1;
 
-            string saveKey = "Level_" + levelID + "_Stars";
-            int currentStars = PlayerPrefs.GetInt(saveKey, 0);
+            int currentStars = ProgressManager.GetBestStars(levelID);
 
             int prevStars = 0;
             if (levelID > 1)
             {
-                prevStars = PlayerPrefs.GetInt("Level_" + (levelID - 1) + "_Stars", 0);
+                prevStars = ProgressManager.GetBestStars(levelID - 1);
             }
 
             bool isFreeStyleLevel = (i == levelButtons.Length - 1);
-            bool isUnlocked = (levelID == 1) || isFreeStyleLevel || (prevStars >= 1) || (PlayerPrefs.GetInt("UnlockAll", 0) == 1);
+            bool isUnlocked = (levelID == 1) || isFreeStyleLevel || (prevStars >= 1) || ProgressManager.IsUnlockAll();
 
             Button btn = levelButtons[i];
             Image bgImage = btn.GetComponent<Image>();
@@ -937,13 +940,13 @@ public class MainMenuManager_VR : MonoBehaviour
 
     public void ResetProgress()
     {
-        PlayerPrefs.DeleteAll();
+        ProgressManager.ResetProgress();
         InitializeAllLevels();
     }
 
     public void UnlockAllLevels()
     {
-        PlayerPrefs.SetInt("UnlockAll", 1);
+        ProgressManager.SetUnlockAll();
         InitializeAllLevels();
     }
 

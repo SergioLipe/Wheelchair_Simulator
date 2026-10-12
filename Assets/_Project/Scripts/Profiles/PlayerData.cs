@@ -39,6 +39,28 @@ public class PlayerData
 
     // Definicoes de input/calibracao desta pessoa
     public InputSettings inputSettings = new InputSettings();
+
+    // Melhor numero de estrelas por nivel (progresso proprio de cada paciente)
+    public List<LevelProgress> levelProgress = new List<LevelProgress>();
+
+    // True depois de o progresso antigo (global, em PlayerPrefs) ter sido copiado para este perfil
+    public bool legacyProgressMigrated = false;
+
+    public static PlayerData CreateNew(string id)
+    {
+        PlayerData data = new PlayerData();
+        data.profileID = id;
+        // Perfis novos comecam do zero: nao herdam o progresso global antigo
+        data.legacyProgressMigrated = true;
+        return data;
+    }
+}
+
+[System.Serializable]
+public class LevelProgress
+{
+    public int levelID;
+    public int bestStars;
 }
 
 [System.Serializable]

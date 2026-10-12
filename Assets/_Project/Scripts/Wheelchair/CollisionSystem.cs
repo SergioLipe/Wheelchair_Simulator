@@ -178,7 +178,7 @@ public class CollisionSystem : MonoBehaviour
             return;
 
         // Debugging: Print collision info and draw hit point in Scene view
-        if (enableCollisionDebug)
+        if (enableCollisionDebug && Debug.isDebugBuild)
         {
             // Print the exact object name, tag, and layer to the Unity Console
             Debug.Log($"<color=orange>[Collision Debug]</color> Wheelchair hit: <b>{hit.gameObject.name}</b> | Tag: {hit.gameObject.tag}");

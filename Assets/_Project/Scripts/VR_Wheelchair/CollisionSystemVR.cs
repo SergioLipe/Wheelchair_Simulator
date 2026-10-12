@@ -91,6 +91,12 @@ public class CollisionSystemVR : MonoBehaviour
     // [OPT] Cache do Transform root para evitar acesso repetido
     private Transform wheelchairRoot;
 
+    private void Awake()
+    {
+        // Logs por colisao custam caro no Quest: so em builds de desenvolvimento / editor
+        if (!Debug.isDebugBuild) enableCollisionDebug = false;
+    }
+
     private void OnEnable()
     {
         enableTime = Time.time;
@@ -134,6 +140,9 @@ public class CollisionSystemVR : MonoBehaviour
             {
                 TotalCollisions++;
                 lastCollisionCountTime = Time.time;
+
+                // Sem isto o LevelManagerVR gravava sempre 0 colisoes no historico do paciente
+                if (LevelManagerVR.Instance != null) LevelManagerVR.Instance.RegisterStrongCollision(collidedObject);
             }
         }
         wasInCollisionState = inCollision;
@@ -144,6 +153,8 @@ public class CollisionSystemVR : MonoBehaviour
             {
                 TotalSlides++;
                 lastSlideCountTime = Time.time;
+
+                if (LevelManagerVR.Instance != null) LevelManagerVR.Instance.RegisterSlide();
             }
         }
         wasSlidingState = wallSliding;
