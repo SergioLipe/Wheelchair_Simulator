@@ -155,6 +155,10 @@ public class MovementVR : MonoBehaviour
     [HideInInspector] public bool playerIsAccelerating = false;
     [HideInInspector] public bool inputLocked = false;
 
+    // O que o paciente usou nesta sessao (para o historico clinico)
+    public bool UsedHandJoystick { get; private set; }
+    public bool UsedController { get; private set; }
+
     // Sound cache
     private bool slidingCache = false;
     private float lastCollisionSoundTime = 0f;
@@ -369,10 +373,12 @@ public class MovementVR : MonoBehaviour
         if (handJoystick != null && handJoystick.IsActive)
         {
             rawInput = handJoystick.Output;
+            if (rawInput.sqrMagnitude > joystickDeadzone * joystickDeadzone) UsedHandJoystick = true;
         }
         else if (joystickActionCached != null)
         {
             rawInput = joystickActionCached.ReadValue<Vector2>();
+            if (rawInput.sqrMagnitude > joystickDeadzone * joystickDeadzone) UsedController = true;
         }
         rawJoystickInput = rawInput;
 

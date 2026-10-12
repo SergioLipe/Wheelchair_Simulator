@@ -795,57 +795,42 @@ public class MainMenuManager_VR : MonoBehaviour
             txtAttemptsCount.text = $"{totalAttempts} {label}";
         }
 
-        // [LOCALIZAÇÃO] labels reutilizadas dentro do loop
-        string lblAttempt   = L("attempt_num", "TENTATIVA");
-        string lblStars     = L("stars_label", "Estrelas");
-        string lblComplete  = L("complete_label", "Completo!");
-        string lblTime      = L("time_label", "Tempo");
-        string lblColisoes  = L("colisoes", "Colisões");
-        string lblDeslizes  = L("deslizes", "Deslizes");
-
-        string historyText = "";
-        int attemptCount = 1;
-
-        List<SessionRecord> records = new List<SessionRecord>(data.sessionHistory);
-        records.Reverse();
-
-        foreach (SessionRecord record in records)
-        {
-            if (record.levelName == levelName)
-            {
-                string formattedDate = record.sessionDate;
-                if (DateTime.TryParse(record.sessionDate, out DateTime parsedDate))
-                {
-                    // nota: 'às' fica fixo; se quiseres traduzir o "às" diz-me
-                    formattedDate = parsedDate.ToString("dd/MM/yyyy 'às' HH:mm");
-                }
-
-                historyText += $"<color=#A0E4FF><b>{lblAttempt} {attemptCount}</b></color>   <color=#AAAAAA>•   {formattedDate}</color>\n";
-
-                // For Freestyle runs, show stars instead of time/collisions
-                if (record.levelName == "Freestyle" || record.levelName == "Level11" || record.levelName == "FreestyleLevel")
-                {
-                    historyText += $"{lblStars}: <color=#FCD34D><b>{record.starsCollected} / {record.starsTotal}</b></color>";
-
-                    if (record.starsTotal > 0 && record.starsCollected >= record.starsTotal)
-                    {
-                        historyText += $"   <color=#16A34A><b>✓ {lblComplete}</b></color>";
-                    }
-
-                    historyText += "\n";
-                }
-                else
-                {
-                    historyText += $"{lblTime}: <b>{record.completionTime:F1}s</b>   |   {lblColisoes}: <color=#EF4444><b>{record.totalCollisions}</b></color>   |   {lblDeslizes}: <color=#FCD34D><b>{record.totalSlides}</b></color>\n";
-                }
-
-                historyText += "<color=#333333>──────────────────────────────────────────</color>\n\n";
-                attemptCount++;
-            }
-        }
+        string historyText = SessionHistoryFormatter.BuildAttemptsText(data, levelName, HistoryL);
 
         if (txtHistoryDetails != null)
             txtHistoryDetails.text = historyText;
+    }
+
+    // ==========================================
+    // EXPORTAR HISTORICO (CSV)
+    // ==========================================
+
+    [Header("--- Exportar histórico (CSV) ---")]
+    [Tooltip("Opcional: texto onde aparece o caminho do ficheiro exportado")]
+    public TMP_Text txtExportStatus;
+
+    // Traducao usada pelo SessionHistoryFormatter
+    private string HistoryL(string key, string fallback) => L(key, fallback);
+
+    /// <summary>
+    /// Exporta o historico de todos os pacientes para um CSV (abre no Excel).
+    /// Ligar ao OnClick de um botao "Exportar histórico".
+    /// </summary>
+    public void Button_ExportHistoryCsv()
+    {
+        string path = ClinicalExport.ExportAllProfiles();
+
+        if (txtExportStatus != null)
+        {
+            txtExportStatus.text = path != null
+                ? string.Format(L("export_done", "Histórico exportado para:\n{0}"), path)
+                : L("export_failed", "Não foi possível exportar o histórico.");
+        }
+
+#if UNITY_STANDALONE || UNITY_EDITOR
+        // No PC abre a pasta para o terapeuta encontrar logo o ficheiro
+        if (path != null) Application.OpenURL("file:///" + System.IO.Path.GetDirectoryName(path).Replace("\\", "/"));
+#endif
     }
 
     public void CloseHistory()

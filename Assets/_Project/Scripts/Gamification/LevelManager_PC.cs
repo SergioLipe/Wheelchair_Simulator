@@ -285,6 +285,22 @@ public class LevelManager_PC : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Chamado pelo HazardArea: termina o nivel como falhado e grava a tentativa no historico
+    /// (antes as tentativas falhadas nao ficavam registadas).
+    /// </summary>
+    public void RegisterFailure(string reason)
+    {
+        if (!isLevelActive) return;
+        isLevelActive = false;
+        if (pauseMenuPanel != null) pauseMenuPanel.SetActive(false);
+
+        SessionRecord record = SessionRecorder.Create(SceneManager.GetActiveScene().name, elapsedTime, collisionCount, slideCount, isVR: false);
+        record.failed = true;
+        record.failReason = reason;
+        SessionRecorder.Save(record);
+    }
+
     public void FinishLevel()
     {
         if (!isLevelActive) return;
@@ -316,24 +332,9 @@ public class LevelManager_PC : MonoBehaviour
         // Progresso (melhor resultado) guardado no perfil do paciente; gravado em disco junto com a sessao
         ProgressManager.RecordStars(levelID, stars);
 
-        if (ProfileManager.Instance != null && ProfileManager.Instance.currentPlayer != null)
-        {
-            SessionRecord newRecord = new SessionRecord();
-            newRecord.sessionDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
-            newRecord.levelName = SceneManager.GetActiveScene().name;
-            newRecord.completionTime = elapsedTime;
-            newRecord.totalCollisions = collisionCount;
-            newRecord.totalSlides = slideCount;
-
-            ProfileManager.Instance.currentPlayer.sessionHistory.Add(newRecord);
-            SaveManager.SaveProfile(ProfileManager.Instance.currentPlayer);
-
-            Debug.Log("Dados clínicos da sessão gravados com sucesso no perfil do paciente!");
-        }
-        else
-        {
-            Debug.LogWarning("Aviso: Nenhum perfil de paciente ativo detetado. Os dados clínicos não foram guardados.");
-        }
+        SessionRecord record = SessionRecorder.Create(SceneManager.GetActiveScene().name, elapsedTime, collisionCount, slideCount, isVR: false);
+        record.starsEarned = stars;
+        SessionRecorder.Save(record);
 
         ShowEndScreen(stars);
     }

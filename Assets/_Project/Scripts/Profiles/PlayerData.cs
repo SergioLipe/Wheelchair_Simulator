@@ -23,6 +23,24 @@ public class SessionRecord
 
     // For Freestyle (Level11) runs only: total stars available in the scene
     public int starsTotal;
+
+    // Tentativa falhada (ex.: atravessou com o sinal vermelho, foi para a relva)
+    public bool failed;
+
+    // Motivo da falha (chave da tabela de localizacao do hazard, ou nome do objeto)
+    public string failReason;
+
+    // Estrelas ganhas no nivel (1-3); 0 se falhou
+    public int starsEarned;
+
+    // "PC" ou "VR"
+    public string platform;
+
+    // "FrontSteering" / "RearSteering"
+    public string steeringType;
+
+    // PC: "Teclado" / "RatoRock" / "Comando"; VR: "Comando" / "Maos"
+    public string inputMode;
 }
 
 [System.Serializable]

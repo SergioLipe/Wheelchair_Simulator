@@ -109,6 +109,20 @@ public class HazardArea : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Motivo para o historico: a chave da mensagem (ex.: "nao_vas_para_a_relva"),
+    /// ou o nome do objeto se a mensagem nao tiver chave.
+    /// </summary>
+    private string GetFailReason()
+    {
+        if (hazardMessage != null && !hazardMessage.IsEmpty)
+        {
+            string key = hazardMessage.TableEntryReference.Key;
+            if (!string.IsNullOrEmpty(key)) return key;
+        }
+        return gameObject.name;
+    }
+
     private void OnTriggerEnter(Collider other)
     {
         if (!this.enabled) return;
@@ -130,17 +144,17 @@ public class HazardArea : MonoBehaviour
             isGameOver = true;
             Time.timeScale = 0f;
 
-            if (LevelManagerVR.Instance != null)
-            {
-                LevelManagerVR.Instance.isLevelActive = false;
-            }
+            // Gravar a tentativa falhada no gestor da plataforma que entrou no hazard
+            // e terminar o nivel nos dois (no PC, sem isto, o ESC pausar+retomar voltava
+            // a por timeScale = 1 e o paciente podia continuar depois do Game Over).
+            string reason = GetFailReason();
+            bool isVR = other.GetComponentInParent<MovementVR>() != null;
 
-            // Sem isto, no PC o ESC (pausar + retomar) voltava a pôr timeScale = 1
-            // e o paciente podia continuar e acabar o nível depois do Game Over.
-            if (LevelManager_PC.Instance != null)
-            {
-                LevelManager_PC.Instance.isLevelActive = false;
-            }
+            if (isVR && LevelManagerVR.Instance != null) LevelManagerVR.Instance.RegisterFailure(reason);
+            else if (!isVR && LevelManager_PC.Instance != null) LevelManager_PC.Instance.RegisterFailure(reason);
+
+            if (LevelManagerVR.Instance != null) LevelManagerVR.Instance.isLevelActive = false;
+            if (LevelManager_PC.Instance != null) LevelManager_PC.Instance.isLevelActive = false;
 
             // PC UI  --> definir a mensagem ANTES de ativar o painel
             ApplyHazardMessage(warningTextPC);
