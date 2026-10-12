@@ -82,7 +82,7 @@ public class VRPerformanceManager : MonoBehaviour
         if (Time.frameCount % 60 == 0)
         {
             float current = XRSettings.eyeTextureResolutionScale;
-            Debug.Log($"[VRPerf:STATUS] XRSettings.eyeTextureResolutionScale={current} eyeTextureWidth={XRSettings.eyeTextureWidth} eyeTextureHeight={XRSettings.eyeTextureHeight}");
+            if (Debug.isDebugBuild) Debug.Log($"[VRPerf:STATUS] XRSettings.eyeTextureResolutionScale={current} eyeTextureWidth={XRSettings.eyeTextureWidth} eyeTextureHeight={XRSettings.eyeTextureHeight}");
             
             // Reaplica se algo sobrescreveu
             if (Mathf.Abs(current - renderScale) > 0.01f)

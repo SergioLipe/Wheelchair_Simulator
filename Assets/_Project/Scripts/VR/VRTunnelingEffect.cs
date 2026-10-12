@@ -40,9 +40,26 @@ public class VRTunnelingEffect : MonoBehaviour
     [Tooltip("Rotação onde o vignette está no máximo (°/s)")]
     public float maxTurnSpeedForFullEffect = 35f;
 
+    [Header("=== Acceleration Triggers ===")]
+    [Tooltip("O ouvido interno sente aceleracoes, nao velocidade constante: travagens e arranques bruscos (colisoes, travao) sao dos momentos que mais enjoam")]
+    public bool useAcceleration = true;
+
+    [Tooltip("Aceleracao/travagem minima (m/s2) para comecar a aparecer")]
+    public float accelThreshold = 0.8f;
+
+    [Tooltip("Aceleracao/travagem (m/s2) onde o vignette esta no maximo")]
+    public float maxAccelForFullEffect = 4f;
+
+    [Tooltip("Tempo (s) que o vignette se mantem depois de um pico de aceleracao (uma colisao dura 1 frame)")]
+    public float accelHoldTime = 0.5f;
+
     [Header("=== Smoothness ===")]
     [Tooltip("Velocidade de fade-in/out. Maior = mais rápido")]
     public float fadeSpeed = 8f;
+
+    [Tooltip("Multiplicador do fade-in em relacao ao fade-out. >1 = o vignette aparece mais depressa do que desaparece (mais protector)")]
+    [Range(1f, 4f)]
+    public float fadeInMultiplier = 2f;
 
     [Tooltip("Curva de intensidade. <1 = sobe rápido no início (mais protector). >1 = sobe devagar")]
     [Range(0.3f, 2f)]
@@ -72,6 +89,8 @@ public class VRTunnelingEffect : MonoBehaviour
     private float previousYRotation;
     private float currentAlpha = 0f;
     private Color cachedColor;
+    private float previousSpeed;
+    private float accelFactorHeld;
 
     // --- Debug (read-only no Inspector durante Play) ---
     [SerializeField, HideInInspector] private float debugSpeed;
@@ -86,6 +105,7 @@ public class VRTunnelingEffect : MonoBehaviour
         {
             wheelchairTransform = wheelchairMovement.transform;
             previousYRotation = wheelchairTransform.eulerAngles.y;
+            previousSpeed = wheelchairMovement.GetCurrentSpeed();
         }
         else
         {
@@ -115,7 +135,24 @@ public class VRTunnelingEffect : MonoBehaviour
         previousYRotation = currentYRotation;
 
         // --- Linear speed (m/s) ---
-        float currentSpeed = Mathf.Abs(wheelchairMovement.GetCurrentSpeed());
+        float signedSpeed = wheelchairMovement.GetCurrentSpeed();
+        float currentSpeed = Mathf.Abs(signedSpeed);
+
+        // --- Aceleracao linear (m/s2), com retencao do pico ---
+        float dt = Time.deltaTime;
+        if (dt > 0f)
+        {
+            float accel = Mathf.Abs(signedSpeed - previousSpeed) / dt;
+            previousSpeed = signedSpeed;
+
+            float accelFactorNow = 0f;
+            if (useAcceleration && accel > accelThreshold)
+            {
+                accelFactorNow = Mathf.InverseLerp(accelThreshold, maxAccelForFullEffect, accel);
+                accelFactorNow = Mathf.Pow(accelFactorNow, intensityCurve);
+            }
+            accelFactorHeld = Mathf.Max(accelFactorNow, accelFactorHeld - dt / Mathf.Max(accelHoldTime, 0.01f));
+        }
 
         // --- Speed factor com curva exponencial ---
         float speedFactor = 0f;
@@ -138,19 +175,20 @@ public class VRTunnelingEffect : MonoBehaviour
         if (combineMotionAndRotation)
         {
             // Magnitude vectorial: andar+rodar simultaneamente = vignette mais forte
-            intensity = Mathf.Sqrt(speedFactor * speedFactor + turnFactor * turnFactor);
+            intensity = Mathf.Sqrt(speedFactor * speedFactor + turnFactor * turnFactor + accelFactorHeld * accelFactorHeld);
             intensity = Mathf.Clamp01(intensity);
         }
         else
         {
-            intensity = Mathf.Max(speedFactor, turnFactor);
+            intensity = Mathf.Max(Mathf.Max(speedFactor, turnFactor), accelFactorHeld);
         }
 
         // --- Aplicar com idle baseline ---
         float targetAlpha = Mathf.Lerp(idleDarkness, maxDarkness, intensity);
 
         // --- Suavização ---
-        currentAlpha = Mathf.Lerp(currentAlpha, targetAlpha, Time.deltaTime * fadeSpeed);
+        float fade = targetAlpha > currentAlpha ? fadeSpeed * fadeInMultiplier : fadeSpeed;
+        currentAlpha = Mathf.Lerp(currentAlpha, targetAlpha, Time.deltaTime * fade);
         cachedColor.a = currentAlpha;
         vignetteImage.color = cachedColor;
 

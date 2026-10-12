@@ -64,6 +64,16 @@ public class MovementVR : MonoBehaviour
     public float rotationSpeed = 90f;
     public bool rotationInPlace = false;
 
+    [Header("=== Conforto VR (reduzir enjoo) ===")]
+    [Tooltip("Velocidade maxima de rotacao da vista (graus/s). Rodar e a principal causa de enjoo em VR. Sem limite chegava a ~160-225 graus/s.")]
+    [Range(20f, 180f)] public float maxTurnRate = 60f;
+
+    [Tooltip("Aceleracao maxima da rotacao (graus/s2). Evita que a rotacao comece/pare de repente (ex.: quando a cadeira para a meio de uma curva).")]
+    [Range(60f, 1000f)] public float maxTurnAcceleration = 180f;
+
+    [Tooltip("Suaviza na vista os degraus/passeios (o CharacterController sobe-os instantaneamente)")]
+    public bool smoothStepUps = true;
+
     [Header("=== Level Start Settings ===")]
     [Tooltip("The speed mode this specific level should start with.")]
     public SpeedMode startingSpeedMode = SpeedMode.Slow;
@@ -134,6 +144,7 @@ public class MovementVR : MonoBehaviour
     private float smoothedVerticalInput = 0f;
     private float smoothedHorizontalInput = 0f;
     private float tryingToTurnTime = 0f;
+    private float currentTurnRate = 0f; // graus/s, com aceleracao limitada
 
     // Realistic Physics State
     private float currentAccelerationVelocity = 0f;
@@ -214,6 +225,12 @@ public class MovementVR : MonoBehaviour
         InitializeLevelSettings();
         PreloadSounds();
         CacheRumbleDevices();
+
+        // [CONFORTO] Suavizar na vista as subidas de degraus/passeios
+        if (smoothStepUps && GetComponent<VRStepSmoother>() == null)
+        {
+            gameObject.AddComponent<VRStepSmoother>();
+        }
         
 
         
@@ -546,8 +563,12 @@ public class MovementVR : MonoBehaviour
             ProcessFrontRotation(isStationary, ref rotationMultiplier);
         }
 
-        float rotation = horizontalInput * rotationSpeed * rotationMultiplier * Time.deltaTime;
-        myTransform.Rotate(0, rotation, 0);
+        // [CONFORTO] Limitar velocidade e aceleracao angular: a rotacao nunca salta de valor
+        // (ex.: ao parar a meio de uma curva o multiplicador passa a 0 num so frame).
+        float targetTurnRate = Mathf.Clamp(horizontalInput * rotationSpeed * rotationMultiplier, -maxTurnRate, maxTurnRate);
+        currentTurnRate = Mathf.MoveTowards(currentTurnRate, targetTurnRate, maxTurnAcceleration * Time.deltaTime);
+
+        myTransform.Rotate(0, currentTurnRate * Time.deltaTime, 0);
     }
 
     private void ProcessRearRotation(bool isStationary, float horizontalInput, ref float multiplier)
@@ -638,6 +659,10 @@ public class MovementVR : MonoBehaviour
 
     void EmergencyStop()
     {
+        // [CONFORTO] A rotacao tambem trava, mas sem parar a vista de forma instantanea
+        currentTurnRate = Mathf.MoveTowards(currentTurnRate, 0f, maxTurnAcceleration * 2f * Time.deltaTime);
+        if (currentTurnRate != 0f) myTransform.Rotate(0, currentTurnRate * Time.deltaTime, 0);
+
         currentSpeed = Mathf.SmoothDamp(currentSpeed, 0f, ref currentAccelerationVelocity, emergencyBrakeTime * 0.5f);
 
         if (Mathf.Abs(currentSpeed) < 0.15f && !brakeLockEngaged)
@@ -811,7 +836,7 @@ public class MovementVR : MonoBehaviour
     public bool IsEmergencyBraking() => emergencyBrake;
     public string GetCurrentSteeringType() => currentSteeringTypeCached.ToString();
 
-    public void LockInput() => inputLocked = true;
+    public void LockInput() { inputLocked = true; currentTurnRate = 0f; }
     public void UnlockInput() => inputLocked = false;
 
     /// <summary>
@@ -820,6 +845,7 @@ public class MovementVR : MonoBehaviour
     /// </summary>
     public void ForceStop()
     {
+        currentTurnRate = 0f;
         currentSpeed = 0f;
         targetSpeed = 0f;
         currentAccelerationVelocity = 0f;
