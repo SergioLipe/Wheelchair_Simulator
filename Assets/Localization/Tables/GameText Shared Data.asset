@@ -435,6 +435,26 @@ MonoBehaviour:
     m_Key: Luz verde
     m_Metadata:
       m_Items: []
+  - m_Id: 7777860854100
+    m_Key: gfx_quality
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854101
+    m_Key: gfx_auto_reduced
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854102
+    m_Key: gfx_high
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854103
+    m_Key: gfx_medium
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854104
+    m_Key: gfx_low
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

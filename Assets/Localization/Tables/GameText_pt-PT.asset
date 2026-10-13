@@ -440,6 +440,26 @@ MonoBehaviour:
     m_Localized: ESPERA PELO SINAL VERDE
     m_Metadata:
       m_Items: []
+  - m_Id: 7777860854100
+    m_Localized: "Gr\xE1ficos"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854101
+    m_Localized: reduzido para manter a fluidez
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854102
+    m_Localized: Alta
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854103
+    m_Localized: "M\xE9dia"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854104
+    m_Localized: Baixa
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

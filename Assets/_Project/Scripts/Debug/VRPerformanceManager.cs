@@ -110,9 +110,8 @@ public class VRPerformanceManager : MonoBehaviour
 
     public void ApplyAll()
     {
-        ApplyTextureFiltering();
-
         #if !UNITY_EDITOR && UNITY_ANDROID
+        ApplyTextureFiltering(); // no PC quem trata disto e o PCGraphicsQuality
         ApplyRenderScale();
 
         // Refresh Rate

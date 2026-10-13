@@ -7,7 +7,7 @@ using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Benchmark de FPS por nivel. So corre se o jogo for lancado com "-benchmark"
-/// (ex.: WheelchairSimulator.exe -benchmark). Em jogo normal nao faz nada.
+/// (ex.: WheelchairSimulator.exe -benchmark), opcional -gfxQuality Alta|Media|Baixa. Em jogo normal nao faz nada.
 ///
 /// Para cada nivel: espera que estabilize, roda a cadeira 360 graus devagar (para desenhar
 /// a cena em todas as direcoes, com transito e peoes a mexer) e regista o tempo de cada frame.
@@ -60,7 +60,7 @@ public class PerformanceBenchmark : MonoBehaviour
         report.AppendLine($"Data: {System.DateTime.Now:yyyy-MM-dd HH:mm}");
         report.AppendLine($"CPU: {SystemInfo.processorType} ({SystemInfo.processorCount} threads)");
         report.AppendLine($"GPU: {SystemInfo.graphicsDeviceName} ({SystemInfo.graphicsMemorySize} MB) - {SystemInfo.graphicsDeviceType}");
-        report.AppendLine($"RAM: {SystemInfo.systemMemorySize} MB | Resolucao: {Screen.width}x{Screen.height} | Qualidade: {QualitySettings.names[QualitySettings.GetQualityLevel()]}");
+        report.AppendLine($"RAM: {SystemInfo.systemMemorySize} MB | Resolucao: {Screen.width}x{Screen.height} | Qualidade: {QualitySettings.names[QualitySettings.GetQualityLevel()]} | Graficos PC: {PCGraphicsQuality.CurrentTier}");
         report.AppendLine($"Por nivel: {WarmupSeconds}s de aquecimento + {MeasureSeconds}s a rodar a cadeira 360 graus. VSync desligado.");
         report.AppendLine();
         report.AppendLine("Nivel    | FPS medio | FPS 1% pior | Frame medio | Frame max | Frames >13.9ms (72Hz) | Draw calls* ");
