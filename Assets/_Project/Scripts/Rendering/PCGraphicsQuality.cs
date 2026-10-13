@@ -70,21 +70,20 @@ public class PCGraphicsQuality : MonoBehaviour
     private UniversalRenderPipelineAsset urp;
     private int origMsaa, origShadowRes;
     private float origShadowDistance;
+    private AnisotropicFiltering origAniso;
+    private int origVSync;
     private readonly List<KeyValuePair<ScriptableRendererFeature, bool>> origFeatures =
         new List<KeyValuePair<ScriptableRendererFeature, bool>>();
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Bootstrap()
     {
-#if UNITY_ANDROID
-        return;
-#else
-        if (instance != null) return;
+        // Verificado em tempo de execucao: no Editor (mesmo com a plataforma Android ativa) tambem corre
+        if (Application.platform == RuntimePlatform.Android || instance != null) return;
         GameObject go = new GameObject("PCGraphicsQuality");
         DontDestroyOnLoad(go);
         go.AddComponent<PCGraphicsQuality>();
         go.AddComponent<PCSettingsMenu>();
-#endif
     }
 
     private static bool XRActive => XRSettings.isDeviceActive;
@@ -97,6 +96,8 @@ public class PCGraphicsQuality : MonoBehaviour
     {
         instance = this;
         urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+        // So altera o asset do PC. No Editor com a plataforma Android, o asset ativo e o do Quest: nao lhe mexer
+        if (urp != null && !urp.name.StartsWith("PC")) urp = null;
         SaveOriginals();
 
         tier = ChooseInitialTier();
@@ -120,7 +121,11 @@ public class PCGraphicsQuality : MonoBehaviour
         if (instance == this) instance = null;
     }
 
-    private void OnApplicationQuit() => RestoreOriginals();
+    private void OnApplicationQuit()
+    {
+        RestoreOriginals();
+        QualitySettings.vSyncCount = origVSync;
+    }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
@@ -353,6 +358,8 @@ public class PCGraphicsQuality : MonoBehaviour
 
     private void SaveOriginals()
     {
+        origAniso = QualitySettings.anisotropicFiltering;
+        origVSync = QualitySettings.vSyncCount;
         if (urp == null) return;
         origMsaa = urp.msaaSampleCount;
         origShadowRes = urp.mainLightShadowmapResolution;
@@ -369,6 +376,7 @@ public class PCGraphicsQuality : MonoBehaviour
 
     private void RestoreOriginals()
     {
+        QualitySettings.anisotropicFiltering = origAniso;
         if (urp == null) return;
         urp.msaaSampleCount = origMsaa;
         urp.mainLightShadowmapResolution = origShadowRes;
