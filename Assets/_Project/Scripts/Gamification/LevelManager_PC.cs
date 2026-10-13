@@ -44,6 +44,7 @@ public class LevelManager_PC : MonoBehaviour
     public int slideCount = 0;
     public bool isLevelActive = true;
     private bool isPaused = false;
+    public bool IsPaused => isPaused;
 
     [Header("--- UI References (In-Game HUD) ---")]
     [Tooltip("The main HUD panel containing the speedometer and timers")]

@@ -460,6 +460,38 @@ MonoBehaviour:
     m_Localized: Baixa
     m_Metadata:
       m_Items: []
+  - m_Id: 7777860854105
+    m_Localized: "Defini\xE7\xF5es"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854106
+    m_Localized: "Qualidade gr\xE1fica"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854107
+    m_Localized: "Resolu\xE7\xE3o"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854108
+    m_Localized: "Ecr\xE3 inteiro"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854109
+    m_Localized: "Campo de vis\xE3o"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854110
+    m_Localized: Fechar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854111
+    m_Localized: Sim
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854112
+    m_Localized: "N\xE3o"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

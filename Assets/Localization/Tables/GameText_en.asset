@@ -459,6 +459,38 @@ MonoBehaviour:
     m_Localized: Low
     m_Metadata:
       m_Items: []
+  - m_Id: 7777860854105
+    m_Localized: Settings
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854106
+    m_Localized: Graphics quality
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854107
+    m_Localized: Resolution
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854108
+    m_Localized: Fullscreen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854109
+    m_Localized: Field of view
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854110
+    m_Localized: Close
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854111
+    m_Localized: Yes
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854112
+    m_Localized: No
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

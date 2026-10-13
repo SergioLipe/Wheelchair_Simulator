@@ -455,6 +455,38 @@ MonoBehaviour:
     m_Key: gfx_low
     m_Metadata:
       m_Items: []
+  - m_Id: 7777860854105
+    m_Key: settings_title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854106
+    m_Key: settings_quality
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854107
+    m_Key: settings_resolution
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854108
+    m_Key: settings_fullscreen
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854109
+    m_Key: settings_fov
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854110
+    m_Key: settings_close
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854111
+    m_Key: settings_yes
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7777860854112
+    m_Key: settings_no
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

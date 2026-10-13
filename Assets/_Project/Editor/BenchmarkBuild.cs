@@ -19,13 +19,16 @@ public static class BenchmarkBuild
             if (args[i] == "-buildOut") outPath = args[i + 1];
         if (string.IsNullOrEmpty(outPath)) outPath = "Builds/Benchmark/WheelchairSim.exe";
 
+        // -development: build de desenvolvimento (o benchmark consegue dizer o que causou cada engasgo)
+        bool development = System.Array.IndexOf(args, "-development") >= 0;
+
         BuildPlayerOptions options = new BuildPlayerOptions
         {
             scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray(),
             locationPathName = outPath,
             target = BuildTarget.StandaloneWindows64,
             targetGroup = BuildTargetGroup.Standalone,
-            options = BuildOptions.None
+            options = development ? BuildOptions.Development : BuildOptions.None
         };
 
         BuildReport report = BuildPipeline.BuildPlayer(options);

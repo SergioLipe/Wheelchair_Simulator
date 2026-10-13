@@ -35,6 +35,24 @@ public class PCGraphicsQuality : MonoBehaviour
 
     public static Tier CurrentTier => instance != null ? instance.tier : Tier.Alta;
 
+    /// <summary>Muda o nivel (menu de definicoes).</summary>
+    public static void SelectTier(Tier t) { if (instance != null) instance.SetTier(t, true, false); }
+
+    private const string FovKey = "pc_fov";
+    public const float MinFov = 50f, MaxFov = 100f;
+
+    /// <summary>Campo de visao da camara do PC (graus). 0 = o valor da cena.</summary>
+    public static float FieldOfView
+    {
+        get => PlayerPrefs.GetFloat(FovKey, 0f);
+        set
+        {
+            PlayerPrefs.SetFloat(FovKey, value <= 0f ? 0f : Mathf.Clamp(value, MinFov, MaxFov));
+            PlayerPrefs.Save();
+            if (instance != null) instance.configuredCameras.Clear();
+        }
+    }
+
     private Tier tier;
     private VolumeProfile profile;
     private Bloom bloom;
@@ -65,6 +83,7 @@ public class PCGraphicsQuality : MonoBehaviour
         GameObject go = new GameObject("PCGraphicsQuality");
         DontDestroyOnLoad(go);
         go.AddComponent<PCGraphicsQuality>();
+        go.AddComponent<PCSettingsMenu>();
 #endif
     }
 
@@ -154,13 +173,14 @@ public class PCGraphicsQuality : MonoBehaviour
         return Tier.Alta;
     }
 
-    private void SetTier(Tier newTier, bool manual)
+    private void SetTier(Tier newTier, bool manual, bool showNotice = true)
     {
         tier = newTier;
         PlayerPrefs.SetInt(PrefKey, (int)tier);
         PlayerPrefs.Save();
         ApplyTier();
         ResetMeasurement();
+        if (!showNotice) return; // o menu de definicoes ja mostra o nivel
 
         string label = L("gfx_quality", "Gráficos") + ": " + TierName(tier);
         if (!manual) label += "  (" + L("gfx_auto_reduced", "reduzido para manter a fluidez") + ")";
@@ -203,6 +223,9 @@ public class PCGraphicsQuality : MonoBehaviour
         data.renderPostProcessing = true;
         data.antialiasing = tier == Tier.Baixa ? AntialiasingMode.FastApproximateAntialiasing : AntialiasingMode.None;
         data.antialiasingQuality = AntialiasingQuality.High;
+
+        float fov = FieldOfView;
+        if (fov > 0f) cam.fieldOfView = fov;
     }
 
     private void CreatePostProcessing()
@@ -307,7 +330,7 @@ public class PCGraphicsQuality : MonoBehaviour
     // AUXILIARES
     // ==========================================
 
-    private string TierName(Tier t)
+    public static string TierName(Tier t)
     {
         switch (t)
         {
@@ -354,7 +377,7 @@ public class PCGraphicsQuality : MonoBehaviour
             if (pair.Key != null) pair.Key.SetActive(pair.Value);
     }
 
-    private static string L(string key, string fallback)
+    public static string L(string key, string fallback)
     {
         try
         {

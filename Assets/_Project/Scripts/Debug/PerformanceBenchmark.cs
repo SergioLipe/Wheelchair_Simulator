@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -66,8 +67,14 @@ public class PerformanceBenchmark : MonoBehaviour
         report.AppendLine("Nivel    | FPS medio | FPS 1% pior | Frame medio | Frame max | Frames >13.9ms (72Hz) | Draw calls* ");
         report.AppendLine("---------|-----------|-------------|-------------|-----------|-----------------------|------------");
 
+        List<string> hitchLog = new List<string>();
+        StartRecorders();
+
+        string onlyLevels = ArgValue("-benchmarkLevels"); // ex.: Level5,Level7
         foreach (string level in Levels)
         {
+            if (!string.IsNullOrEmpty(onlyLevels) && System.Array.IndexOf(onlyLevels.Split(','), level) < 0) continue;
+
             Time.timeScale = 1f;
             AsyncOperation load = SceneManager.LoadSceneAsync(level);
             while (!load.isDone) yield return null;
@@ -86,6 +93,7 @@ public class PerformanceBenchmark : MonoBehaviour
                 yield return null;
                 float now = Time.realtimeSinceStartup;
                 frameMs.Add((now - last) * 1000f);
+                if ((now - last) * 1000f > HitchMs) hitchLog.Add(DescribeHitch(level, now - start, (now - last) * 1000f));
                 last = now;
 
                 Time.timeScale = 1f; // o painel de inicio/contagem pode pausar o jogo
@@ -101,6 +109,11 @@ public class PerformanceBenchmark : MonoBehaviour
         }
 
         report.AppendLine();
+        report.AppendLine($"Engasgos (frames > {HitchMs} ms) e o que demorou nesse frame (so em builds de desenvolvimento):");
+        if (hitchLog.Count == 0) report.AppendLine("  nenhum");
+        foreach (string h in hitchLog) report.AppendLine("  " + h);
+        DisposeRecorders();
+        report.AppendLine();
         report.AppendLine("* Draw calls nao disponiveis em builds de release.");
         report.AppendLine("Nota: o Quest 3 e varias vezes mais lento que um PC; estes valores servem para comparar niveis entre si.");
 
@@ -111,6 +124,65 @@ public class PerformanceBenchmark : MonoBehaviour
         File.WriteAllText(outPath, report.ToString(), new UTF8Encoding(true));
         Debug.Log("[Benchmark] Relatorio: " + outPath);
         Application.Quit();
+    }
+
+    // ==========================================
+    // DIAGNOSTICO DE ENGASGOS
+    // ==========================================
+
+    private const float HitchMs = 25f;
+
+    // Marcadores do Profiler que costumam causar engasgos
+    private static readonly (ProfilerCategory category, string marker, string label)[] HitchMarkers =
+    {
+        (ProfilerCategory.Render, "Shader.CreateGPUProgram", "compilar shader"),
+        (ProfilerCategory.Render, "CreateGPUProgram", "compilar shader (GPU)"),
+        (ProfilerCategory.Render, "Shader.Parse", "ler shader"),
+        (ProfilerCategory.Render, "Gfx.CreatePipelineState", "criar PSO"),
+        (ProfilerCategory.Memory, "GC.Collect", "limpeza de memoria (GC)"),
+        (ProfilerCategory.Loading, "Loading.ReadObject", "carregar asset"),
+        (ProfilerCategory.Loading, "Loading.AwakeFromLoad", "inicializar asset"),
+        (ProfilerCategory.Scripts, "BehaviourUpdate", "scripts Update"),
+        (ProfilerCategory.Scripts, "CoroutinesDelayedCalls", "coroutines"),
+        (ProfilerCategory.Physics, "Physics.Simulate", "fisica"),
+        (ProfilerCategory.Render, "Gfx.WaitForPresentOnGfxThread", "esperar pela GPU"),
+        (ProfilerCategory.Render, "Gfx.UploadTexture", "enviar textura"),
+        (ProfilerCategory.Render, "Mesh.UploadMeshData", "enviar mesh"),
+    };
+
+    private readonly List<ProfilerRecorder> recorders = new List<ProfilerRecorder>();
+    private ProfilerRecorder gcAllocRecorder;
+
+    private void StartRecorders()
+    {
+        foreach (var m in HitchMarkers)
+            recorders.Add(ProfilerRecorder.StartNew(m.category, m.marker));
+        gcAllocRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "GC Allocated In Frame");
+    }
+
+    private void DisposeRecorders()
+    {
+        foreach (ProfilerRecorder r in recorders) r.Dispose();
+        recorders.Clear();
+        gcAllocRecorder.Dispose();
+    }
+
+    private string DescribeHitch(string level, float atSeconds, float frameMs)
+    {
+        StringBuilder sb = new StringBuilder($"{level} aos {atSeconds:F1}s: {frameMs:F1} ms ->");
+        bool any = false;
+        for (int i = 0; i < recorders.Count; i++)
+        {
+            if (!recorders[i].Valid) continue;
+            double ms = recorders[i].LastValue / 1e6;
+            if (ms < 2.0) continue;
+            sb.Append($" {HitchMarkers[i].label} {ms:F1} ms;");
+            any = true;
+        }
+        if (gcAllocRecorder.Valid && gcAllocRecorder.LastValue > 1024 * 1024)
+            sb.Append($" alocou {gcAllocRecorder.LastValue / (1024f * 1024f):F1} MB;");
+        if (!any) sb.Append(" (sem marcador conhecido)");
+        return sb.ToString();
     }
 
     private static Transform FindActiveChair()
