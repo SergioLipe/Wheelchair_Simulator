@@ -1,4 +1,6 @@
+using System.Collections;
 using UnityEngine;
+using UnityEngine.XR;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.XR;
 using Unity.XR.CoreUtils;
@@ -45,6 +47,9 @@ public class VRSeatCalibrator : MonoBehaviour
 
     private float lastRecenterTime = -999f;
 
+    private const float MaxWaitForTracking = 2f;
+    private const float SettleSnapDelay = 0.3f;
+
     private void OnEnable()
     {
         if (recenterAction != null && recenterAction.action != null)
@@ -62,26 +67,57 @@ public class VRSeatCalibrator : MonoBehaviour
         }
     }
 
-   private void Start()
+    private void Start()
     {
-        // 1. Immediate snap right when the scene/countdown starts
-        Debug.Log("[VRSeatCalibrator] Immediate calibration for countdown start!");
-        Calibrate();
+        // 1. Snap as soon as the headset reports a real head pose.
+        //    (Calibrating in the first frame used the camera's default pose, before tracking started,
+        //    so the player began outside the chair until the delayed snap.)
+        StartCoroutine(CalibrateWhenTracked());
 
-        // 2. Delayed snap (kept as requested to ensure tracking is stable)
-        Debug.Log($"[VRSeatCalibrator] Auto-calibrating again in {startDelay} seconds...");
-        Invoke(nameof(Calibrate), startDelay);
+        // 2. Delayed snap (kept as before, once tracking is stable)
+        Invoke(nameof(AutoCalibrate), startDelay);
     }
+
+    private IEnumerator CalibrateWhenTracked()
+    {
+        float timeout = Time.realtimeSinceStartup + MaxWaitForTracking;
+        while (!IsHeadTracked() && Time.realtimeSinceStartup < timeout)
+            yield return null;
+
+        // Wait one more frame so the camera has the new pose applied
+        yield return null;
+        AutoCalibrate();
+
+        // The first tracked poses can still be settling: snap once more shortly after
+        yield return new WaitForSecondsRealtime(SettleSnapDelay);
+        Calibrate(true, false);
+    }
+
+    private bool IsHeadTracked()
+    {
+        if (headCamera == null) return false;
+
+        UnityEngine.XR.InputDevice head = InputDevices.GetDeviceAtXRNode(XRNode.Head);
+        if (head.isValid && head.TryGetFeatureValue(UnityEngine.XR.CommonUsages.isTracked, out bool tracked) && tracked)
+            return true;
+
+        // Fallback: before tracking starts the camera sits at its default local pose (origin)
+        return headCamera.localPosition.sqrMagnitude > 0.0001f;
+    }
+
+    private void AutoCalibrate() => Calibrate(true);
 
     private void OnRecenter(InputAction.CallbackContext ctx)
     {
         Calibrate();
     }
 
-    public void Calibrate()
+    public void Calibrate() => Calibrate(false);
+
+    private void Calibrate(bool automatic, bool feedback = true)
     {
-        // Anti-spam protection
-        if (Time.time - lastRecenterTime < recenterCooldown) return;
+        // Anti-spam protection (only for the button; automatic snaps always run)
+        if (!automatic && Time.time - lastRecenterTime < recenterCooldown) return;
         lastRecenterTime = Time.time;
 
         // Safety check
@@ -101,7 +137,7 @@ public class VRSeatCalibrator : MonoBehaviour
         xrOrigin.transform.position += posDiff;
 
         // 3. Feedback
-        PlayRecenterFeedback();
+        if (feedback) PlayRecenterFeedback();
 
         // 4. Fire event
         OnCalibrated?.Invoke();

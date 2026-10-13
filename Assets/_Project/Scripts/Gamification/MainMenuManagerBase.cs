@@ -88,6 +88,10 @@ public abstract class MainMenuManagerBase : MonoBehaviour
     [Tooltip("Opcional: texto onde aparece o caminho do ficheiro exportado")]
     public TMP_Text txtExportStatus;
 
+    [Header("--- Versao ---")]
+    [Tooltip("Opcional: texto para o numero da versao. Se ficar vazio, e criado no canto inferior direito do menu.")]
+    public TMP_Text txtVersion;
+
     protected readonly List<GameObject> spawnedProfileButtons = new List<GameObject>();
     protected readonly List<GameObject> spawnedHistoryProfileButtons = new List<GameObject>();
     protected string profileToDelete = null;
@@ -182,6 +186,53 @@ public abstract class MainMenuManagerBase : MonoBehaviour
         if (btnConfirmNo != null) btnConfirmNo.onClick.AddListener(OnConfirmDeleteNo);
 
         InitializeAllLevels();
+        ShowVersion();
+    }
+
+    // ==========================================
+    // VERSAO
+    // ==========================================
+
+    /// <summary>
+    /// Mostra "v" + a versao da app (Project Settings > Player > Version), para se saber
+    /// que build esta instalada (ex.: no Quest).
+    /// </summary>
+    protected void ShowVersion()
+    {
+        if (txtVersion == null) txtVersion = CreateVersionLabel();
+        if (txtVersion != null) txtVersion.text = "v" + Application.version;
+    }
+
+    private TMP_Text CreateVersionLabel()
+    {
+        GameObject anchor = profileSelectionPanel != null ? profileSelectionPanel : levelSelectionPanel;
+        Canvas canvas = anchor != null ? anchor.GetComponentInParent<Canvas>(true) : null;
+        if (canvas == null) return null;
+        canvas = canvas.rootCanvas;
+
+        GameObject go = new GameObject("VersionLabel", typeof(RectTransform));
+        go.layer = canvas.gameObject.layer;
+        RectTransform rt = (RectTransform)go.transform;
+        rt.SetParent(canvas.transform, false);
+        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(1f, 0f);
+
+        TextMeshProUGUI label = go.AddComponent<TextMeshProUGUI>();
+        label.alignment = TextAlignmentOptions.BottomRight;
+        label.raycastTarget = false;
+        label.color = new Color(1f, 1f, 1f, 0.6f);
+
+        // Usar o mesmo tipo de letra e uma escala proporcional a um texto do menu (funciona no canvas de PC e no de VR)
+        float fontSize = 18f;
+        if (txtCurrentProfile != null)
+        {
+            label.font = txtCurrentProfile.font;
+            fontSize = txtCurrentProfile.fontSize * 0.6f;
+        }
+        label.fontSize = fontSize;
+        rt.sizeDelta = new Vector2(fontSize * 8f, fontSize * 1.5f);
+        rt.anchoredPosition = new Vector2(-fontSize * 0.5f, fontSize * 0.5f);
+        rt.SetAsLastSibling();
+        return label;
     }
 
     // ==========================================
