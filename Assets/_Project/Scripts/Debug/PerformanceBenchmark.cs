@@ -82,6 +82,16 @@ public class PerformanceBenchmark : MonoBehaviour
             float warmEnd = Time.realtimeSinceStartup + WarmupSeconds;
             while (Time.realtimeSinceStartup < warmEnd) { Time.timeScale = 1f; yield return null; }
 
+            // -benchmarkShots pasta: guarda uma imagem de cada nivel (para comparar a qualidade grafica)
+            string shotDir = ArgValue("-benchmarkShots");
+            if (!string.IsNullOrEmpty(shotDir))
+            {
+                Directory.CreateDirectory(shotDir);
+                ScreenCapture.CaptureScreenshot(Path.Combine(shotDir, $"{level}_{PCGraphicsQuality.CurrentTier}.png"));
+                yield return null;
+                yield return null;
+            }
+
             Transform chair = FindActiveChair();
             Quaternion startRot = chair != null ? chair.rotation : Quaternion.identity;
 

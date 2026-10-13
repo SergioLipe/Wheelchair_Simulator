@@ -16,7 +16,7 @@ using UnityEngine.XR;
 ///
 /// O nivel inicial e escolhido pela placa grafica (integradas -> Baixa) e fica guardado.
 /// F9 muda de nivel. Se os FPS ficarem baixos durante alguns segundos, desce um nivel sozinho.
-/// Linha de comandos: -gfxQuality Alta|Media|Baixa (ex.: para o benchmark).
+/// Linha de comandos: -gfxQuality Alta|Media|Baixa (ex.: para o benchmark). -gfxOff desliga tudo (aspeto original).
 /// </summary>
 public class PCGraphicsQuality : MonoBehaviour
 {
@@ -80,6 +80,7 @@ public class PCGraphicsQuality : MonoBehaviour
     {
         // Verificado em tempo de execucao: no Editor (mesmo com a plataforma Android ativa) tambem corre
         if (Application.platform == RuntimePlatform.Android || instance != null) return;
+        if (HasArg("-gfxOff")) return; // para comparar com o aspeto original
         GameObject go = new GameObject("PCGraphicsQuality");
         DontDestroyOnLoad(go);
         go.AddComponent<PCGraphicsQuality>();
